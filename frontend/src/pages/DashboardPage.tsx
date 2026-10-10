@@ -18,12 +18,10 @@ export function DashboardPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
       const [statsRes, challengesRes] = await Promise.all([
         pactumApi.getDashboardStats(),
         pactumApi.listChallenges({ limit: 50 }),
@@ -32,7 +30,6 @@ export function DashboardPage() {
       setChallenges(challengesRes.items || (Array.isArray(challengesRes) ? challengesRes : []));
     } catch (err: any) {
       console.error("Error loading dashboard data:", err);
-      setError(err?.message || "Failed to load challenges from backend.");
     } finally {
       setLoading(false);
     }
@@ -60,40 +57,6 @@ export function DashboardPage() {
     <AppLayout>
       {/* 3 Primary Statistics Cards */}
       <ChallengeStats stats={stats} loading={loading} />
-
-      {error && (
-        <div
-          style={{
-            background: "#fce8ea",
-            border: "1px solid var(--color-danger)",
-            color: "var(--color-danger)",
-            padding: "12px 16px",
-            borderRadius: "var(--radius-button)",
-            marginBottom: 16,
-            fontSize: 13,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 10,
-          }}
-          role="alert"
-          id="dashboardErrorNotice"
-        >
-          <div>
-            <strong>Backend Connection Notice:</strong> {error}
-          </div>
-          <button
-            type="button"
-            onClick={() => void loadData()}
-            className="pactum-btn-secondary"
-            style={{ padding: "4px 10px", fontSize: 12 }}
-            id="dashboardRetryBtn"
-          >
-            Retry
-          </button>
-        </div>
-      )}
 
       {/* Action Header & Search */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
