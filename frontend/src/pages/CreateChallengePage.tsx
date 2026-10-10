@@ -1,13 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePrivy } from "@privy-io/react-auth";
 import { parseEther } from "viem";
 import { ArrowLeft, Sparkles, DollarSign } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import FeeModal from "../components/challenges/FeeModal";
-import { pactumApi } from "../services/apiClient";
+import { pactumApi, setTokenProvider } from "../services/apiClient";
 
 export function CreateChallengePage() {
   const navigate = useNavigate();
+  const { ready, authenticated, getAccessToken } = usePrivy();
+
+  // Ensure fresh Privy token provider is wired
+  useEffect(() => {
+    if (ready && authenticated) {
+      setTokenProvider(async () => {
+        try {
+          return await getAccessToken();
+        } catch {
+          return null;
+        }
+      });
+    }
+  }, [ready, authenticated, getAccessToken]);
 
   // 01. Challenge Information
   const [topic, setTopic] = useState("");
@@ -55,7 +70,7 @@ export function CreateChallengePage() {
       return;
     }
     if (!agreeRules) {
-      setError("You must agree to the challenge rules to create the challenge.");
+      setError("Please check the confirmation box agreeing to the challenge rules to proceed.");
       return;
     }
 
@@ -68,7 +83,8 @@ export function CreateChallengePage() {
       // Calculate integer base-unit string without JavaScript floating-point math
       let baseStakeAmount: string;
       try {
-        const parsed = parseEther(stakeAmount.trim());
+        const cleanedAmount = (stakeAmount || "5.00").trim().replace(",", ".");
+        const parsed = parseEther(cleanedAmount);
         if (parsed <= 0n) {
           setError("Stake amount must be greater than zero.");
           setIsSubmitting(false);
@@ -76,7 +92,7 @@ export function CreateChallengePage() {
         }
         baseStakeAmount = parsed.toString();
       } catch {
-        setError("Please enter a valid numeric stake amount.");
+        setError("Please enter a valid numeric stake amount (e.g. 5.00).");
         setIsSubmitting(false);
         return;
       }
@@ -426,20 +442,43 @@ export function CreateChallengePage() {
               </h2>
             </div>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "var(--color-text)", marginBottom: 20 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: "var(--color-text)", marginBottom: 16 }}>
               <input
                 type="checkbox"
                 checked={agreeRules}
-                onChange={(e) => setAgreeRules(e.target.checked)}
+                onChange={(e) => {
+                  setAgreeRules(e.target.checked);
+                  if (e.target.checked && error.includes("confirmation box")) {
+                    setError("");
+                  }
+                }}
                 style={{ width: 18, height: 18, cursor: "pointer" }}
                 id="agreeRulesCheckbox"
               />
               <span>I agree to the challenge rules, submission deadlines, and peer review terms.</span>
             </label>
 
+            {error && (
+              <div
+                style={{
+                  background: "#fce8ea",
+                  border: "1px solid var(--color-danger)",
+                  color: "var(--color-danger)",
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-button)",
+                  marginBottom: 14,
+                  fontSize: 13,
+                }}
+                role="alert"
+                id="createChallengeErrorNotice"
+              >
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isSubmitting || !agreeRules}
+              disabled={isSubmitting}
               className="pactum-btn-primary"
               style={{ width: "100%", padding: "14px", fontSize: 15 }}
               id="createChallengeSubmitBtn"

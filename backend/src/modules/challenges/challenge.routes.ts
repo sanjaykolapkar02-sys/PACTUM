@@ -19,6 +19,9 @@ router.get(
   asyncHandler(controller.handleListChallenges)
 );
 
+// POST /api/challenges/seed - seed demo challenges (controlled/idempotent)
+router.post("/seed", asyncHandler(controller.handleSeedChallenges));
+
 // GET /api/challenges/:id - get single challenge
 router.get(
   "/:id",

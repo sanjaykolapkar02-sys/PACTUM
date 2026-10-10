@@ -84,6 +84,17 @@ export function ChallengeDetailsPage() {
   const isFull =
     Boolean(challenge.maximumParticipants && (challenge.participantCount || 0) >= challenge.maximumParticipants);
 
+  const formattedStake = (() => {
+    try {
+      if (!challenge.stakeAmount) return "0.10";
+      const val = BigInt(challenge.stakeAmount);
+      const mon = Number(val) / 1e18;
+      return mon >= 0.01 ? mon.toString() : "0.05";
+    } catch {
+      return "0.10";
+    }
+  })();
+
   return (
     <AppLayout>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -146,7 +157,7 @@ export function ChallengeDetailsPage() {
                 3. Entry Stake
               </div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "var(--color-success)", marginTop: 2 }}>
-                5.00 {challenge.tokenSymbol || "MON"}
+                {formattedStake} {challenge.tokenSymbol || "MON"}
               </div>
             </div>
 
@@ -243,7 +254,7 @@ export function ChallengeDetailsPage() {
           title="Manual On-Chain Stake Approval"
           description={`Review and manually approve your ${challenge.tokenSymbol || "MON"} stake transaction on Monad Testnet.`}
           isContractCall={true}
-          amountMon="5.00"
+          amountMon={formattedStake}
           onSuccess={(txHash) => {
             setIsTxModalOpen(false);
             void handleJoin(txHash);

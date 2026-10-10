@@ -9,19 +9,23 @@ export function ActiveChallengesPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await pactumApi.listChallenges({ status: "active" });
+      setChallenges(data.items || (Array.isArray(data) ? data : []));
+    } catch (err: any) {
+      console.error("Error loading active challenges:", err);
+      setError(err?.message || "Failed to load active challenges from backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await pactumApi.listChallenges({ status: "open" });
-        setChallenges(data.items || (Array.isArray(data) ? data : []));
-      } catch (err) {
-        console.error("Error loading active challenges:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     void load();
   }, []);
 
@@ -63,6 +67,40 @@ export function ActiveChallengesPage() {
         />
       </div>
 
+      {error && (
+        <div
+          style={{
+            background: "#fce8ea",
+            border: "1px solid var(--color-danger)",
+            color: "var(--color-danger)",
+            padding: "12px 16px",
+            borderRadius: "var(--radius-button)",
+            marginBottom: 16,
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+          role="alert"
+          id="activeErrorNotice"
+        >
+          <div>
+            <strong>Notice:</strong> {error}
+          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="pactum-btn-secondary"
+            style={{ padding: "4px 10px", fontSize: 12 }}
+            id="activeRetryBtn"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-text-muted)" }}>
           <div className="spinner" style={{ width: 22, height: 22, marginBottom: 10 }} />
@@ -83,50 +121,70 @@ export function ActiveChallengesPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
-          {filtered.map((c) => (
-            <div key={c._id} className="pactum-card" id={`active-card-${c._id}`}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                <span className="pactum-topic-pill">{c.category}</span>
-                <span className="pactum-badge pactum-badge-active">● Active</span>
-              </div>
+          {filtered.map((c) => {
+            const elapsedDays = c.startAt
+              ? Math.max(1, Math.min(c.duration, Math.ceil((Date.now() - new Date(c.startAt).getTime()) / (1000 * 60 * 60 * 24))))
+              : Math.min(c.duration, 3);
+            const remainingDays = c.endAt
+              ? Math.max(0, Math.ceil((new Date(c.endAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+              : null;
 
-              <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 6px", color: "var(--color-text)" }}>
-                {c.title}
-              </h3>
-
-              <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
-                {c.description}
-              </p>
-
-              {/* Progress bar */}
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-                  <span style={{ color: "var(--color-text)" }}>Progress</span>
-                  <span style={{ color: "var(--color-primary-dark)" }}>4 / {c.duration} days</span>
-                </div>
-                <div style={{ width: "100%", height: 6, background: "var(--color-border)", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ width: `${Math.min(100, (4 / c.duration) * 100)}%`, height: "100%", background: "var(--gradient-primary)", borderRadius: 999 }} />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--color-border)" }}>
-                <div style={{ fontSize: 12, color: "var(--color-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                  <Clock size={13} />
-                  <span>Next: {c.dailyDeadline || "10:00 PM"}</span>
+            return (
+              <div key={c._id} className="pactum-card" id={`active-card-${c._id}`}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <span className="pactum-topic-pill">{c.category}</span>
+                  <span className="pactum-badge pactum-badge-active">● Active</span>
                 </div>
 
-                <Link
-                  to={`/challenges/${c._id}/room`}
-                  className="pactum-btn-primary"
-                  style={{ padding: "8px 14px", fontSize: 12 }}
-                  id={`openChallengeBtn-${c._id}`}
-                >
-                  <span>Open Challenge</span>
-                  <ArrowRight size={13} />
-                </Link>
+                <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 6px", color: "var(--color-text)" }}>
+                  {c.title}
+                </h3>
+
+                <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>
+                  {c.description}
+                </p>
+
+                {/* Progress bar */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                    <span style={{ color: "var(--color-text)" }}>Progress</span>
+                    <span style={{ color: "var(--color-primary-dark)" }}>
+                      {elapsedDays} / {c.duration} days
+                    </span>
+                  </div>
+                  <div style={{ width: "100%", height: 6, background: "var(--color-border)", borderRadius: 999, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, (elapsedDays / c.duration) * 100)}%`,
+                        height: "100%",
+                        background: "var(--gradient-primary)",
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 12, color: "var(--color-text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                    <Clock size={13} />
+                    <span>
+                      {remainingDays !== null ? `${remainingDays}d remaining` : `Next: ${c.dailyDeadline || "10:00 PM"}`}
+                    </span>
+                  </div>
+
+                  <Link
+                    to={`/challenges/${c._id}/room`}
+                    className="pactum-btn-primary"
+                    style={{ padding: "8px 14px", fontSize: 12 }}
+                    id={`openChallengeBtn-${c._id}`}
+                  >
+                    <span>Open Challenge</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </AppLayout>

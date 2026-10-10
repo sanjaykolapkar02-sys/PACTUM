@@ -103,6 +103,37 @@ const challengeSchema = new Schema(
       default: null,
       trim: true,
     },
+    tokenSymbol: {
+      type: String,
+      default: "MON",
+      trim: true,
+    },
+    dailyDeadline: {
+      type: String,
+      default: "10:00 PM",
+      trim: true,
+    },
+    specificRules: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    submissionRules: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    submissionSchedule: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    seedKey: {
+      type: String,
+      default: null,
+      sparse: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

@@ -16,6 +16,7 @@ export async function handleListChallenges(req: Request, res: Response): Promise
   const result = await challengeService.listChallenges({
     status: query.status,
     category: query.category,
+    search: query.search,
     page: query.page || 1,
     limit: query.limit || 20,
   });
@@ -74,3 +75,15 @@ export async function handleGetParticipants(req: Request, res: Response): Promis
     data: participants,
   });
 }
+
+export async function handleSeedChallenges(req: Request, res: Response): Promise<void> {
+  const { seedChallenges } = await import("../../scripts/seedChallenges.js");
+  const result = await seedChallenges();
+
+  res.status(200).json({
+    success: true,
+    message: "Challenges idempotently seeded successfully",
+    ...result,
+  });
+}
+

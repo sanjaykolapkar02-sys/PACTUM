@@ -1,4 +1,7 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import { usePrivy } from "@privy-io/react-auth";
+import { setTokenProvider } from "./services/apiClient";
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import BrowseChallengesPage from "./pages/BrowseChallengesPage";
@@ -11,9 +14,31 @@ import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
+function PrivyTokenSync() {
+  const { ready, authenticated, getAccessToken } = usePrivy();
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      setTokenProvider(async () => {
+        try {
+          return await getAccessToken();
+        } catch {
+          return null;
+        }
+      });
+    } else {
+      setTokenProvider(null);
+    }
+  }, [ready, authenticated, getAccessToken]);
+
+  return null;
+}
+
 export function App() {
   return (
-    <Routes>
+    <>
+      <PrivyTokenSync />
+      <Routes>
       {/* Public Landing & Login */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LandingPage />} />
@@ -111,6 +136,7 @@ export function App() {
       {/* 404 Fallback */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }
 

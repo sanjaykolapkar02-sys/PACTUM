@@ -14,6 +14,10 @@ export interface CreateChallengeInput {
   stakeAmount: string;
   maximumParticipants?: number;
   imageUrl?: string | null;
+  dailyDeadline?: string;
+  specificRules?: string;
+  submissionRules?: string;
+  submissionSchedule?: string;
 }
 
 export interface UpdateChallengeInput {
@@ -22,11 +26,16 @@ export interface UpdateChallengeInput {
   category?: string;
   imageUrl?: string | null;
   status?: ChallengeStatus;
+  dailyDeadline?: string;
+  specificRules?: string;
+  submissionRules?: string;
+  submissionSchedule?: string;
 }
 
 export interface ChallengeQueryFilters {
-  status?: ChallengeStatus;
+  status?: string;
   category?: string;
+  search?: string;
   page: number;
   limit: number;
 }
@@ -51,6 +60,10 @@ export async function createChallenge(
     stakeAmount: input.stakeAmount,
     maximumParticipants: input.maximumParticipants || null,
     imageUrl: input.imageUrl || null,
+    dailyDeadline: input.dailyDeadline || "10:00 PM",
+    specificRules: input.specificRules || null,
+    submissionRules: input.submissionRules || null,
+    submissionSchedule: input.submissionSchedule || null,
     status: "open",
     participantCount: 0,
     chainId: 10143,
@@ -66,10 +79,23 @@ export async function listChallenges(filters: ChallengeQueryFilters) {
   const query: Record<string, unknown> = {};
 
   if (filters.status) {
-    query.status = filters.status;
+    if (filters.status === "active") {
+      query.status = { $in: ["active", "open"] };
+    } else if (filters.status === "upcoming") {
+      query.$or = [{ status: "open" }, { startAt: { $gt: new Date() } }];
+    } else if (filters.status.includes(",")) {
+      const parts = filters.status.split(",").map((s) => s.trim()).filter(Boolean);
+      query.status = { $in: parts };
+    } else {
+      query.status = filters.status;
+    }
   }
   if (filters.category) {
     query.category = new RegExp(filters.category, "i");
+  }
+  if (filters.search) {
+    const rx = new RegExp(filters.search, "i");
+    query.$or = [{ title: rx }, { category: rx }, { description: rx }];
   }
 
   const skip = (filters.page - 1) * filters.limit;

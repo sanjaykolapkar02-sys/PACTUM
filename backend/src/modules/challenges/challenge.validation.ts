@@ -32,6 +32,10 @@ export const createChallengeSchema = z
       ),
     maximumParticipants: z.number().int().min(1).optional(),
     imageUrl: z.string().url("imageUrl must be a valid URL").optional().nullable(),
+    dailyDeadline: z.string().trim().max(50).optional(),
+    specificRules: z.string().trim().max(2000).optional(),
+    submissionRules: z.string().trim().max(2000).optional(),
+    submissionSchedule: z.string().trim().max(500).optional(),
   })
   .refine((data) => new Date(data.endAt) > new Date(data.startAt), {
     message: "endAt must be later than startAt",
@@ -45,12 +49,17 @@ export const updateChallengeSchema = z
     category: z.string().trim().min(2).max(80).optional(),
     imageUrl: z.string().url().optional().nullable(),
     status: z.enum(CHALLENGE_STATUSES).optional(),
+    dailyDeadline: z.string().trim().max(50).optional(),
+    specificRules: z.string().trim().max(2000).optional(),
+    submissionRules: z.string().trim().max(2000).optional(),
+    submissionSchedule: z.string().trim().max(500).optional(),
   })
   .strict();
 
 export const challengeQuerySchema = z.object({
-  status: z.enum(CHALLENGE_STATUSES).optional(),
+  status: z.string().trim().optional(),
   category: z.string().trim().optional(),
+  search: z.string().trim().optional(),
   page: z
     .string()
     .optional()

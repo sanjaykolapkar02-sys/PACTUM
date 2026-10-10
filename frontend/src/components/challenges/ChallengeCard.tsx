@@ -10,6 +10,8 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
   const statusBadgeClass =
     challenge.status === "active"
       ? "pactum-badge-active"
+      : challenge.status === "open"
+      ? "pactum-badge-pending"
       : challenge.status === "upcoming"
       ? "pactum-badge-pending"
       : "pactum-badge-closed";
@@ -17,9 +19,22 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
   const statusLabel =
     challenge.status === "active"
       ? "Active"
+      : challenge.status === "open"
+      ? "Open"
       : challenge.status === "upcoming"
       ? "Upcoming"
       : "Completed";
+
+  const formattedFee = (() => {
+    try {
+      if (!challenge.stakeAmount) return "0.1";
+      const val = BigInt(challenge.stakeAmount);
+      const mon = Number(val) / 1e18;
+      return mon >= 0.01 ? mon.toString() : "0.05";
+    } catch {
+      return "0.1";
+    }
+  })();
 
   return (
     <div className="pactum-card" id={`challenge-card-${challenge._id}`}>
@@ -52,7 +67,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--color-border)" }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)" }}>
-          {challenge.tokenSymbol || "MON"} Pool
+          {formattedFee} {challenge.tokenSymbol || "MON"} Entry
         </span>
 
         <Link

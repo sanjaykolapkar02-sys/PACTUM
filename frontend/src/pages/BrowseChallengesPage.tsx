@@ -11,22 +11,26 @@ export function BrowseChallengesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "upcoming">("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await pactumApi.listChallenges({
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: search.trim() || undefined,
+      });
+      setChallenges(data.items || (Array.isArray(data) ? data : []));
+    } catch (err: any) {
+      console.error("Error browsing challenges:", err);
+      setError(err?.message || "Failed to load challenges from backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await pactumApi.listChallenges({
-          status: statusFilter === "all" ? undefined : statusFilter,
-          category: search || undefined,
-        });
-        setChallenges(data.items || (Array.isArray(data) ? data : []));
-      } catch (err) {
-        console.error("Error browsing challenges:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     void load();
   }, [statusFilter, search]);
 
@@ -47,6 +51,40 @@ export function BrowseChallengesPage() {
           <span>New Challenge</span>
         </Link>
       </div>
+
+      {error && (
+        <div
+          style={{
+            background: "#fce8ea",
+            border: "1px solid var(--color-danger)",
+            color: "var(--color-danger)",
+            padding: "12px 16px",
+            borderRadius: "var(--radius-button)",
+            marginBottom: 16,
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+          role="alert"
+          id="browseErrorNotice"
+        >
+          <div>
+            <strong>Notice:</strong> {error}
+          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="pactum-btn-secondary"
+            style={{ padding: "4px 10px", fontSize: 12 }}
+            id="browseRetryBtn"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div style={{ position: "relative", marginBottom: 14 }}>
