@@ -1,0 +1,2 @@
+# Dependencies are installed locally using `forge install --no-git` (see README).
+# For production, pin and audit your exact OpenZeppelin and forge-std versions.
