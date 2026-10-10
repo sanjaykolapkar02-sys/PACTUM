@@ -189,14 +189,17 @@ export async function joinChallenge(
 
   const canonicalWallet = user.walletAddress || (walletAddress ? walletAddress.toLowerCase() : null);
 
-  // Verify challenge is open for registration
-  if (challenge.status !== "open" && challenge.status !== "draft") {
-    throw ApiError.badRequest(`Cannot join challenge with status '${challenge.status}'`);
-  }
+  // Verify challenge is open for registration (demo challenges permit testing enrollment)
+  const isDemoChallenge = Boolean((challenge as any).seedKey);
+  if (!isDemoChallenge) {
+    if (challenge.status !== "open" && challenge.status !== "draft") {
+      throw ApiError.badRequest(`Cannot join challenge with status '${challenge.status}'`);
+    }
 
-  // Check if start time has already passed
-  if (new Date() >= challenge.startAt) {
-    throw ApiError.badRequest("Registration window has closed for this challenge");
+    // Check if start time has already passed
+    if (new Date() >= challenge.startAt) {
+      throw ApiError.badRequest("Registration window has closed for this challenge");
+    }
   }
 
   // Check participant capacity limit

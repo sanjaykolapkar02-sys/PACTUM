@@ -77,13 +77,13 @@ export async function handleGetParticipants(req: Request, res: Response): Promis
 }
 
 export async function handleSeedChallenges(req: Request, res: Response): Promise<void> {
-  const { seedChallenges } = await import("../../scripts/seedChallenges.js");
-  const result = await seedChallenges();
+  const { seedJudgesDemoChallenge } = await import("../../scripts/seedJudgesDemo.js");
+  const demoResult = await seedJudgesDemoChallenge();
 
   res.status(200).json({
     success: true,
-    message: "Challenges idempotently seeded successfully",
-    ...result,
+    message: "Demo challenge idempotently seeded successfully",
+    demoChallenge: demoResult,
   });
 }
 

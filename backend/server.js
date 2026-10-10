@@ -49,10 +49,20 @@ async function privyGetUser(userId) {
   return res.json();
 }
 
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:8000")
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:8000",
+  "http://localhost:3000",
+  "https://*.vercel.app",
+];
+
+const configuredOrigins = (process.env.FRONTEND_ORIGIN || "")
   .split(",")
   .map(o => o.trim())
   .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...configuredOrigins]));
 
 function isOriginAllowed(origin, list) {
   if (!origin) return true;
@@ -61,7 +71,7 @@ function isOriginAllowed(origin, list) {
     const a = allowed.replace(/\/+$/, "").toLowerCase();
     if (a === norm) return true;
     if (a.includes("*")) {
-      const reg = "^" + a.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[a-zA-Z0-9_-]+") + "$";
+      const reg = "^" + a.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[a-zA-Z0-9_.-]+") + "$";
       return new RegExp(reg).test(norm);
     }
     return false;

@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { Search, Flame, ArrowRight, Clock } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import { pactumApi } from "../services/apiClient";
+import { useCommitmentWallet } from "../hooks/useCommitmentWallet";
 import type { Challenge } from "../types/pactum";
 
 export function ActiveChallengesPage() {
+  const { address } = useCommitmentWallet();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,30 @@ export function ActiveChallengesPage() {
       setLoading(true);
       setError(null);
       const data = await pactumApi.listChallenges({ status: "active" });
-      setChallenges(data.items || (Array.isArray(data) ? data : []));
+      const allActive = data.items || (Array.isArray(data) ? data : []);
+
+      if (!address) {
+        // User has no connected wallet or active enrolled commitments
+        setChallenges([]);
+        return;
+      }
+
+      // Filter to only challenges the user has actively joined
+      const joinedList: Challenge[] = [];
+      for (const ch of allActive) {
+        try {
+          const parts = await pactumApi.getParticipants(ch._id);
+          const isMember = parts.some(
+            (p: any) => p.walletAddress && p.walletAddress.toLowerCase() === address.toLowerCase()
+          );
+          if (isMember) {
+            joinedList.push(ch);
+          }
+        } catch {
+          // Continue gracefully
+        }
+      }
+      setChallenges(joinedList);
     } catch (err: any) {
       console.error("Error loading active challenges:", err);
       setError(err?.message || "Failed to load active challenges from backend.");
@@ -27,7 +52,7 @@ export function ActiveChallengesPage() {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [address]);
 
   const filtered = challenges.filter((c) => {
     if (!search.trim()) return true;
@@ -101,7 +126,7 @@ export function ActiveChallengesPage() {
         </div>
       )}
 
-      {loading ? (
+      {error ? null : loading ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-text-muted)" }}>
           <div className="spinner" style={{ width: 22, height: 22, marginBottom: 10 }} />
           <div>Loading active challenges…</div>

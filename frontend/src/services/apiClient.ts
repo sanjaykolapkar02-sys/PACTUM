@@ -61,6 +61,14 @@ export function buildApiUrl(endpoint: string): string {
     }
   }
 
+  if (import.meta.env.PROD && (baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1"))) {
+    throw new ApiError(
+      500,
+      "VITE_BACKEND_URL is configured to localhost in your production environment. Please update VITE_BACKEND_URL in Vercel to your deployed backend URL and redeploy.",
+      "invalid_production_backend_url"
+    );
+  }
+
   // Prevent duplicate /api/api if baseUrl ends with /api and endpoint starts with /api
   if (baseUrl.endsWith("/api") && normalizedEndpoint.startsWith("/api/")) {
     return `${baseUrl.slice(0, -4)}${normalizedEndpoint}`;

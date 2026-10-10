@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { env } from "./config/env";
 import { monadConfig } from "./config/monad";
-import { checkDatabaseHealth } from "./config/database";
+import { connectDatabase, checkDatabaseHealth } from "./config/database";
 import { notFoundHandler } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorHandler";
 import { asyncHandler } from "./utils/asyncHandler";
@@ -18,10 +18,20 @@ import {
 
 const app = express();
 
-const allowedOrigins = (env.FRONTEND_ORIGIN || "http://localhost:5174")
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:8000",
+  "http://localhost:3000",
+  "https://*.vercel.app",
+];
+
+const configuredOrigins = (env.FRONTEND_ORIGIN || "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...configuredOrigins]));
 
 /**
  * Checks whether an incoming request Origin is permitted by FRONTEND_ORIGIN.
@@ -42,7 +52,7 @@ function isOriginAllowed(origin: string, allowedList: string[]): boolean {
         "^" +
         normalizedAllowed
           .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-          .replace(/\*/g, "[a-zA-Z0-9_-]+") +
+          .replace(/\*/g, "[a-zA-Z0-9_.-]+") +
         "$";
       return new RegExp(regexPattern).test(normalizedOrigin);
     }
@@ -72,6 +82,16 @@ app.use(
 
 // Body Parsing
 app.use(express.json({ limit: "1mb" }));
+
+// Serverless / Hosted database connection assurance middleware
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDatabase();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Safe request logging (no credentials or bearer tokens logged)
 app.use((req, res, next) => {
