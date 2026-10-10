@@ -15,6 +15,7 @@ export const monadConfig = {
   hexChainId: `0x${chainId.toString(16)}`,
   rpcUrl,
   faucetUrl: "https://faucet.monad.xyz/",
+  explorerUrl: "https://testnet.monadexplorer.com",
   currencySymbol: "MON",
   currencyName: "Monad",
   decimals: 18,
@@ -26,6 +27,7 @@ export const MONAD_TESTNET = {
   name: "Monad Testnet",
   rpcUrl: monadConfig.rpcUrl,
   faucetUrl: monadConfig.faucetUrl,
+  explorerUrl: monadConfig.explorerUrl,
   nativeCurrency: {
     name: monadConfig.currencyName,
     symbol: monadConfig.currencySymbol,

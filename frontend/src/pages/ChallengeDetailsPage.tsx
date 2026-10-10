@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCommitmentWallet } from "../hooks/useCommitmentWallet";
-import { ArrowLeft, Clock, Users, Calendar, ShieldCheck, ArrowRight } from "lucide-react";
+import { ArrowLeft, Clock, Users, Calendar, ShieldCheck, ArrowRight, Wallet } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import { pactumApi } from "../services/apiClient";
 import type { Challenge } from "../types/pactum";
+import ManualTransactionModal from "../components/wallet/ManualTransactionModal";
 
 export function ChallengeDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export function ChallengeDetailsPage() {
   const [joining, setJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState("");
+  const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -33,7 +35,7 @@ export function ChallengeDetailsPage() {
     void load();
   }, [id]);
 
-  const handleJoin = async () => {
+  const handleJoin = async (_verifiedTxHash?: string) => {
     if (!id || !challenge) return;
 
     if (challenge.maximumParticipants && (challenge.participantCount || 0) >= challenge.maximumParticipants) {
@@ -212,15 +214,41 @@ export function ChallengeDetailsPage() {
             <button
               type="button"
               disabled={joining || isFull || hasJoined}
-              onClick={handleJoin}
+              onClick={() => setIsTxModalOpen(true)}
+              className="pactum-btn-secondary"
+              id="manualStakeTxBtn"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Wallet size={15} />
+              <span>Manual Wallet Stake</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={joining || isFull || hasJoined}
+              onClick={() => handleJoin()}
               className="pactum-btn-primary"
               id="joinChallengeBtn"
             >
               <ShieldCheck size={16} />
-              <span>{hasJoined ? "Joined!" : joining ? "Joining…" : "Join Challenge"}</span>
+              <span>{hasJoined ? "Joined!" : joining ? "Joining..." : "Join Challenge"}</span>
             </button>
           </div>
         </div>
+
+        {/* Manual Transaction Modal */}
+        <ManualTransactionModal
+          isOpen={isTxModalOpen}
+          onClose={() => setIsTxModalOpen(false)}
+          title="Manual On-Chain Stake Approval"
+          description={`Review and manually approve your ${challenge.tokenSymbol || "MON"} stake transaction on Monad Testnet.`}
+          isContractCall={true}
+          amountMon="5.00"
+          onSuccess={(txHash) => {
+            setIsTxModalOpen(false);
+            void handleJoin(txHash);
+          }}
+        />
       </div>
     </AppLayout>
   );

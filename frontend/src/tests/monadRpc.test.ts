@@ -107,4 +107,33 @@ describe('Monad Testnet Configuration & RPC Service', () => {
       );
     });
   });
+
+  describe('Transaction Verification & Explorer URLs', () => {
+    it('builds explorer transaction URL matching Monad Testnet explorer', async () => {
+      const { getExplorerTxUrl } = await import('../services/monadRpc');
+      const hash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+      expect(getExplorerTxUrl(hash)).toBe(
+        `https://testnet.monadexplorer.com/tx/${hash}`
+      );
+    });
+
+    it('verifies on-chain transaction receipt status from publicClient', async () => {
+      const { waitForTransactionConfirmation } = await import('../services/monadRpc');
+      const mockHash = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef' as `0x${string}`;
+      const waitSpy = vi.spyOn(publicClient, 'waitForTransactionReceipt').mockResolvedValueOnce({
+        status: 'success',
+        blockNumber: 42100n,
+        transactionHash: mockHash,
+        gasUsed: 21000n,
+      } as any);
+
+      const result = await waitForTransactionConfirmation(mockHash);
+      expect(result.isSuccess).toBe(true);
+      expect(result.status).toBe('success');
+      expect(result.blockNumber).toBe(42100n);
+      expect(result.transactionHash).toBe(mockHash);
+      waitSpy.mockRestore();
+    });
+  });
 });
+

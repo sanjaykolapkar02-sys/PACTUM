@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 import { useCommitmentWallet } from "../../hooks/useCommitmentWallet";
 import { shortAddress } from "../../services/monadRpc";
 
 export default function WalletCard() {
   const { address } = useCommitmentWallet();
+  const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState("");
 
   async function copyAddress() {
@@ -13,8 +15,12 @@ export default function WalletCard() {
     }
     try {
       await navigator.clipboard.writeText(address);
+      setCopied(true);
       setMessage("Wallet address copied.");
-      setTimeout(() => setMessage(""), 2500);
+      setTimeout(() => {
+        setCopied(false);
+        setMessage("");
+      }, 2500);
     } catch {
       setMessage("Could not copy the wallet address.");
       setTimeout(() => setMessage(""), 2500);
@@ -39,7 +45,7 @@ export default function WalletCard() {
     <section className="panel">
       <div className="panel-head">
         <h3>Your Embedded Monad Wallet</h3>
-        <span className="badge green">● Active</span>
+        <span className="badge green">Active</span>
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
@@ -78,8 +84,10 @@ export default function WalletCard() {
           onClick={copyAddress}
           className="btn secondary small"
           id="copyWalletBtn"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          📋 Copy Address
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          <span>{copied ? "Copied" : "Copy Address"}</span>
         </button>
         {message && (
           <span role="status" style={{ fontSize: 12, color: "var(--green)", fontWeight: 700 }}>

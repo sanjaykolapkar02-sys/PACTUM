@@ -1,3 +1,4 @@
+import { RefreshCw } from "lucide-react";
 import { useCommitmentWallet } from "../../hooks/useCommitmentWallet";
 import { useMonadBalance } from "../../hooks/useMonadBalance";
 
@@ -15,7 +16,7 @@ export default function WalletBalance() {
       <div style={{ margin: "8px 0 14px" }}>
         {loading && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)" }}>
-            <span className="spinner" /> Querying Monad Testnet balance…
+            <span className="spinner" /> Querying Monad Testnet balance...
           </div>
         )}
 
@@ -43,8 +44,10 @@ export default function WalletBalance() {
         disabled={loading || !address}
         className="btn secondary small"
         id="refreshBalanceBtn"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
       >
-        {loading ? <span className="spinner" /> : "🔄"} Refresh Balance
+        {loading ? <span className="spinner" /> : <RefreshCw size={14} />}
+        <span>Refresh Balance</span>
       </button>
     </section>
   );

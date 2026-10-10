@@ -71,3 +71,33 @@ export function shortAddress(addr?: string | null): string {
   if (addr.length <= 10) return addr;
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
+
+/**
+ * Wait for a transaction receipt on Monad Testnet and verify actual block confirmation.
+ * Never reports success until the receipt has been returned and verified.
+ */
+export async function waitForTransactionConfirmation(
+  txHash: `0x${string}`,
+  timeoutMs: number = 60_000
+) {
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+    timeout: timeoutMs,
+  });
+
+  return {
+    isSuccess: receipt.status === "success",
+    status: receipt.status,
+    blockNumber: receipt.blockNumber,
+    transactionHash: receipt.transactionHash,
+    gasUsed: receipt.gasUsed,
+  };
+}
+
+/**
+ * Build block explorer URL for a transaction hash.
+ */
+export function getExplorerTxUrl(txHash: string): string {
+  return `${monadConfig.explorerUrl}/tx/${txHash}`;
+}
+

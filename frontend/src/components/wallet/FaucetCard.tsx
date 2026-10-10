@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { isAddress } from "viem";
+import { Copy, Check, ExternalLink, RefreshCw, AlertCircle, Info } from "lucide-react";
 import { MONAD_TESTNET } from "../../config/monad";
 import { shortAddress } from "../../services/monadRpc";
 
@@ -22,30 +23,12 @@ export default function FaucetCard({
   lastUpdated,
   isStale = false,
   onRefresh,
-  onStartQuickPolling,
 }: FaucetCardProps) {
   const [copied, setCopied] = useState(false);
-  const [hasVisitedFaucet, setHasVisitedFaucet] = useState(false);
-  const [faucetVisitNotice, setFaucetVisitNotice] = useState<string | null>(null);
-  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
-  const [successNotice, setSuccessNotice] = useState<string | null>(null);
-
-  const prevBalanceRef = useRef<string | null>(balance);
+  const [faucetOpened, setFaucetOpened] = useState(false);
 
   const isValidAddress = Boolean(walletAddress && isAddress(walletAddress));
   const displayAddress = isValidAddress ? shortAddress(walletAddress) : null;
-
-  // Track balance changes to detect when faucet funds arrive
-  useEffect(() => {
-    if (prevBalanceRef.current && balance && balance !== prevBalanceRef.current) {
-      if (hasVisitedFaucet) {
-        setSuccessNotice("✓ New tokens detected! Your Monad Testnet balance has updated.");
-        setPendingNotice(null);
-        setFaucetVisitNotice(null);
-      }
-    }
-    prevBalanceRef.current = balance;
-  }, [balance, hasVisitedFaucet]);
 
   async function copyAddress() {
     if (!walletAddress || !isValidAddress) return;
@@ -63,38 +46,15 @@ export default function FaucetCard({
 
   function openFaucet() {
     if (!walletAddress || !isValidAddress) return;
-    setHasVisitedFaucet(true);
-    setSuccessNotice(null);
-    setPendingNotice(null);
-    setFaucetVisitNotice(
-      "Official Faucet opened in a new tab. After requesting testnet MON on faucet.monad.xyz, return here. The dashboard will automatically detect your new balance."
-    );
-    onStartQuickPolling?.();
+    setFaucetOpened(true);
     window.open(MONAD_TESTNET.faucetUrl, "_blank", "noopener,noreferrer");
   }
 
   async function handleRefresh() {
     if (!walletAddress || isLoading) return;
-    const currentBalanceBefore = balance;
     await onRefresh();
-
-    if (hasVisitedFaucet) {
-      if (currentBalanceBefore && balance && currentBalanceBefore === balance) {
-        setPendingNotice(
-          "Tokens have not arrived yet. Faucet transactions may still be pending in the network queue or subject to Faucet restrictions. Automatic 15s refresh is active."
-        );
-      } else {
-        setPendingNotice(null);
-      }
-    }
   }
 
-  function handleClaimedAction() {
-    onStartQuickPolling?.();
-    void handleRefresh();
-  }
-
-  // Parse if balance is zero or low
   const isZeroBalance = balance === "0.0000 MON" || balance === "0 MON";
 
   return (
@@ -120,19 +80,19 @@ export default function FaucetCard({
           </h2>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span className="badge green">● Chain ID {MONAD_TESTNET.chainId}</span>
+          <span className="badge green">Chain ID {MONAD_TESTNET.chainId}</span>
           <span className="badge" style={{ background: "#f0e7dc", color: "var(--dark)", fontSize: 11 }}>
-            Auto-refresh (15s)
+            Manual Refresh
           </span>
         </div>
       </div>
 
       <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 20px", lineHeight: 1.6 }}>
-        Claim free native <strong>{MONAD_TESTNET.nativeCurrency.symbol}</strong> tokens from the official Monad
+        Request testnet <strong>{MONAD_TESTNET.nativeCurrency.symbol}</strong> tokens from the official Monad
         Testnet Faucet to fund transaction fees for your CommitmentPool embedded wallet.
       </p>
 
-      {/* Wallet Status & Address */}
+      {/* Wallet Status and Address */}
       {walletAddress && isValidAddress ? (
         <div style={{ marginBottom: 18 }}>
           <div
@@ -182,16 +142,30 @@ export default function FaucetCard({
                 fontSize: 12,
                 whiteSpace: "nowrap",
                 fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
               }}
               aria-label="Copy wallet address"
             >
-              {copied ? "✓ Copied!" : "📋 Copy Address"}
+              {copied ? (
+                <>
+                  <Check size={14} />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  <span>Copy Address</span>
+                </>
+              )}
             </button>
           </div>
         </div>
       ) : (
-        <div className="notice warning" role="alert" style={{ marginBottom: 18 }}>
-          <strong>Wallet Unavailable:</strong> Connect your wallet through Privy first to view your address and request tokens.
+        <div className="notice warning" role="alert" style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 8 }}>
+          <AlertCircle size={16} />
+          <span><strong>Wallet Unavailable:</strong> Connect your wallet through Privy to view your address and request tokens.</span>
         </div>
       )}
 
@@ -228,7 +202,7 @@ export default function FaucetCard({
             </small>
             {isStale && (
               <span style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700 }}>
-                ● Stale
+                Stale
               </span>
             )}
           </div>
@@ -236,7 +210,7 @@ export default function FaucetCard({
           {isLoading ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 16 }}>
               <span className="spinner" style={{ width: 14, height: 14 }} />
-              <span>Checking balance…</span>
+              <span>Checking balance...</span>
             </div>
           ) : error && balance === null ? (
             <div role="alert" style={{ color: "var(--red)", fontSize: 13, fontWeight: 700 }}>
@@ -278,7 +252,7 @@ export default function FaucetCard({
               marginBottom: 4,
             }}
           >
-            Network & Detection
+            Network & Status
           </small>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", marginTop: 4 }}>
             <span
@@ -303,29 +277,19 @@ export default function FaucetCard({
 
       {/* Error Notice */}
       {error && (
-        <div className="notice error" role="alert" style={{ marginBottom: 16 }}>
-          <strong>RPC Warning:</strong> {error}{balance !== null ? " (showing last confirmed balance)" : ""}
+        <div className="notice error" role="alert" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <AlertCircle size={16} />
+          <span><strong>RPC Warning:</strong> {error}{balance !== null ? " (showing last confirmed balance)" : ""}</span>
         </div>
       )}
 
-      {/* Success Notice when new balance arrives */}
-      {successNotice && (
-        <div className="notice success" role="status" style={{ marginBottom: 16 }}>
-          {successNotice}
-        </div>
-      )}
-
-      {/* Faucet Visit Guide Notice */}
-      {faucetVisitNotice && !successNotice && (
-        <div className="notice info" role="status" style={{ marginBottom: 16 }}>
-          ℹ️ {faucetVisitNotice}
-        </div>
-      )}
-
-      {/* Pending Notice after faucet visit if balance has not changed */}
-      {pendingNotice && !successNotice && (
-        <div className="notice warning" role="status" style={{ marginBottom: 16 }}>
-          ⏳ {pendingNotice}
+      {/* Manual Faucet Status Guidance */}
+      {faucetOpened && (
+        <div className="notice info" role="status" style={{ marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <Info size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          <div>
+            <strong>Manual Request Opened:</strong> After completing your claim on the official faucet tab, return here and click <strong>Refresh Balance</strong> below to query your updated balance from the Monad RPC.
+          </div>
         </div>
       )}
 
@@ -346,29 +310,9 @@ export default function FaucetCard({
             background: "var(--brown)",
           }}
         >
-          <span>💧</span> Get Testnet MON
+          <ExternalLink size={16} />
+          <span>Get Testnet MON</span>
         </button>
-
-        {hasVisitedFaucet && (
-          <button
-            type="button"
-            onClick={handleClaimedAction}
-            disabled={!walletAddress || !isValidAddress || isLoading}
-            className="btn secondary"
-            id="iveRequestedMonBtn"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "12px 18px",
-              fontSize: 14,
-              border: "1px solid var(--brown)",
-              fontWeight: 700,
-            }}
-          >
-            <span>⚡</span> I've Requested MON (Quick Check)
-          </button>
-        )}
 
         <button
           type="button"
@@ -384,8 +328,12 @@ export default function FaucetCard({
             fontSize: 14,
           }}
         >
-          {isLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : "🔄"}
-          <span>{isLoading ? "Refreshing…" : "Refresh Balance"}</span>
+          {isLoading ? (
+            <span className="spinner" style={{ width: 14, height: 14 }} />
+          ) : (
+            <RefreshCw size={15} />
+          )}
+          <span>{isLoading ? "Refreshing..." : "Refresh Balance"}</span>
         </button>
       </div>
 
@@ -400,13 +348,13 @@ export default function FaucetCard({
         }}
       >
         <p style={{ margin: "0 0 8px", fontWeight: 700, color: "var(--dark)" }}>
-          Automatic balance detection workflow:
+          Manual Testnet Funding Instructions:
         </p>
         <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
           <li>Copy your embedded wallet address above.</li>
-          <li>Click <strong>Get Testnet MON</strong> to open the official faucet.</li>
-          <li>Paste your address and complete the faucet claim on faucet.monad.xyz.</li>
-          <li>Return to this dashboard. Polling automatically checks every 15 seconds (and resumes immediately on tab focus).</li>
+          <li>Click <strong>Get Testnet MON</strong> to open the official Monad faucet in a new tab.</li>
+          <li>Paste your address on the faucet website and submit your request.</li>
+          <li>Return to this page and click <strong>Refresh Balance</strong> to read the confirmed balance from the Monad Testnet RPC.</li>
         </ol>
 
         <div style={{ marginTop: 12 }}>
@@ -424,7 +372,8 @@ export default function FaucetCard({
               gap: 4,
             }}
           >
-            Open Official Monad Faucet ↗
+            <span>Open Official Monad Faucet</span>
+            <ExternalLink size={13} />
           </a>
         </div>
       </div>
