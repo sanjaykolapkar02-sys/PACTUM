@@ -85,6 +85,15 @@ export function AppPrivyProvider({ children }: AppPrivyProviderProps) {
             createOnLogin: "users-without-wallets",
           },
         },
+        externalWallets: {
+          coinbaseWallet: {
+            config: {
+              preference: {
+                options: "eoaOnly",
+              },
+            },
+          },
+        },
         defaultChain: monadTestnet,
         supportedChains: [monadTestnet],
       }}
