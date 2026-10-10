@@ -6,6 +6,29 @@ import type {
   ChatMessage,
   DashboardStats,
 } from "../types/pactum";
+import {
+  DEMO_CHALLENGES,
+  DEMO_PARTICIPANTS,
+  DEMO_SUBMISSIONS,
+  DEMO_CHAT_MESSAGES,
+  DEMO_STATS,
+} from "../data/mockDemoData";
+
+export function isDemoMode(): boolean {
+  if (typeof window === "undefined") return false;
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("demo") === "true") return true;
+  return sessionStorage.getItem("pactum_demo_mode") === "true";
+}
+
+export function setDemoMode(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  if (enabled) {
+    sessionStorage.setItem("pactum_demo_mode", "true");
+  } else {
+    sessionStorage.removeItem("pactum_demo_mode");
+  }
+}
 
 /**
  * Resolves the backend base URL.
@@ -259,6 +282,25 @@ export const pactumApi = {
     limit: number;
     totalPages: number;
   }> {
+    if (isDemoMode()) {
+      let filtered = [...DEMO_CHALLENGES];
+      if (params?.status && params.status !== "all") {
+        filtered = filtered.filter((c) => c.status === params.status);
+      }
+      if (params?.category) {
+        filtered = filtered.filter((c) =>
+          c.category.toLowerCase().includes(params.category!.toLowerCase())
+        );
+      }
+      return {
+        items: filtered,
+        total: filtered.length,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      };
+    }
+
     const query = new URLSearchParams();
     if (params?.status && params.status !== "all") query.set("status", params.status);
     if (params?.category) query.set("category", params.category);
@@ -268,25 +310,44 @@ export const pactumApi = {
     const qs = query.toString();
     const endpoint = `/api/challenges${qs ? `?${qs}` : ""}`;
 
-    const res = await request<any>(endpoint, {
-      method: "GET",
-      signal,
-    });
+    try {
+      const res = await request<any>(endpoint, {
+        method: "GET",
+        signal,
+      });
 
-    const items = res.items || res.data?.items || res.data || [];
-    return {
-      items,
-      total: res.total ?? items.length,
-      page: res.page ?? 1,
-      limit: res.limit ?? 20,
-      totalPages: res.totalPages ?? 1,
-    };
+      const items = res.items || res.data?.items || res.data || [];
+      return {
+        items,
+        total: res.total ?? items.length,
+        page: res.page ?? 1,
+        limit: res.limit ?? 20,
+        totalPages: res.totalPages ?? 1,
+      };
+    } catch (err) {
+      if (isDemoMode()) {
+        return {
+          items: DEMO_CHALLENGES,
+          total: DEMO_CHALLENGES.length,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        };
+      }
+      throw err;
+    }
   },
 
   /**
    * Single Challenge Details: GET /api/challenges/:id
    */
   async getChallenge(id: string, signal?: AbortSignal): Promise<Challenge> {
+    if (id.startsWith("demo-") || isDemoMode()) {
+      const found = DEMO_CHALLENGES.find((c) => c._id === id);
+      if (found) return found;
+      if (isDemoMode() && DEMO_CHALLENGES[0]) return DEMO_CHALLENGES[0];
+    }
+
     const res = await request<{ success: boolean; data: Challenge }>(`/api/challenges/${id}`, {
       method: "GET",
       signal,
@@ -355,6 +416,22 @@ export const pactumApi = {
     walletAddress?: string,
     signal?: AbortSignal
   ): Promise<Participant> {
+    if (id.startsWith("demo-") || isDemoMode()) {
+      const demoPart: Participant = {
+        _id: "part_joined_" + Math.random().toString(36).substring(2, 8),
+        challengeId: id,
+        userId: "current_user",
+        displayName: "You",
+        walletAddress: walletAddress || "0xMyWallet",
+        joinedAt: new Date().toISOString(),
+        status: "active",
+        submissionCount: 0,
+        todayStatus: "not_submitted",
+      };
+      pactumRealtime.emit("challenge.participant_joined", { challengeId: id, participant: demoPart });
+      return demoPart;
+    }
+
     const res = await request<{ success: boolean; data: Participant }>(`/api/challenges/${id}/join`, {
       method: "POST",
       requiresAuth: true,
@@ -370,6 +447,10 @@ export const pactumApi = {
    * List Participants: GET /api/challenges/:id/participants
    */
   async getParticipants(id: string, signal?: AbortSignal): Promise<Participant[]> {
+    if (id.startsWith("demo-") || isDemoMode()) {
+      return DEMO_PARTICIPANTS;
+    }
+
     const res = await request<{ success: boolean; data: Participant[] }>(
       `/api/challenges/${id}/participants`,
       {
@@ -388,6 +469,33 @@ export const pactumApi = {
     payload: { evidenceUrl: string; note?: string | null },
     signal?: AbortSignal
   ): Promise<Submission> {
+    if (challengeId.startsWith("demo-") || isDemoMode()) {
+      const newSub: Submission = {
+        _id: "sub_demo_" + Math.random().toString(36).substring(2, 9),
+        challengeId,
+        participantId: "part_current_user",
+        userId: "current_user",
+        submitterName: "You",
+        submitterWallet: "0xMyWallet",
+        evidenceUrl: payload.evidenceUrl,
+        note: payload.note || null,
+        submittedAt: new Date().toISOString(),
+        status: "pending",
+        approvalsCount: 0,
+        rejectionsCount: 0,
+        pendingCount: 1,
+        userVoted: null,
+      };
+      const key = `pactum_demo_submissions_${challengeId}`;
+      try {
+        const existing = await this.getSubmissions(challengeId);
+        const updated = [newSub, ...existing];
+        sessionStorage.setItem(key, JSON.stringify(updated));
+      } catch {}
+      pactumRealtime.emit("submission.created", newSub);
+      return newSub;
+    }
+
     const res = await request<{ success: boolean; data: Submission }>(
       `/api/challenges/${challengeId}/submissions`,
       {
@@ -406,6 +514,15 @@ export const pactumApi = {
    * Get Submissions: GET /api/challenges/:id/submissions
    */
   async getSubmissions(challengeId: string, signal?: AbortSignal): Promise<Submission[]> {
+    if (challengeId.startsWith("demo-") || isDemoMode()) {
+      const key = `pactum_demo_submissions_${challengeId}`;
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored) return JSON.parse(stored);
+      } catch {}
+      return DEMO_SUBMISSIONS;
+    }
+
     const res = await request<{ success: boolean; data: Submission[] }>(
       `/api/challenges/${challengeId}/submissions`,
       {
@@ -424,6 +541,23 @@ export const pactumApi = {
     payload: { vote: "approve" | "reject"; comment?: string | null },
     signal?: AbortSignal
   ): Promise<Vote> {
+    if (submissionId.startsWith("sub_demo") || isDemoMode()) {
+      const voteResult: Vote = {
+        _id: "vote_" + Math.random().toString(36).substring(2, 9),
+        submissionId,
+        voterId: "current_user",
+        voterWallet: "0xMyWallet",
+        vote: payload.vote,
+        comment: payload.comment || null,
+        createdAt: new Date().toISOString(),
+      };
+      pactumRealtime.emit("submission.vote_updated", {
+        submissionId,
+        vote: voteResult,
+      });
+      return voteResult;
+    }
+
     const res = await request<{ success: boolean; data: Vote }>(
       `/api/submissions/${submissionId}/votes`,
       {
@@ -456,6 +590,9 @@ export const pactumApi = {
    * Dashboard Statistics
    */
   async getDashboardStats(signal?: AbortSignal): Promise<DashboardStats> {
+    if (isDemoMode()) {
+      return DEMO_STATS;
+    }
     try {
       const res = await this.listChallenges({ limit: 100 }, signal);
       const activeCount = res.items.filter((c) => c.status === "active" || c.status === "open").length;
@@ -477,14 +614,16 @@ export const pactumApi = {
    * Chat messages
    */
   async getChatMessages(challengeId: string): Promise<ChatMessage[]> {
-    // In-memory chat store until backend chat persistence is wired
     const key = `pactum_chat_${challengeId}`;
     try {
       const stored = sessionStorage.getItem(key);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
+      if (stored) return JSON.parse(stored);
+    } catch {}
+
+    if (challengeId.startsWith("demo-") || isDemoMode()) {
+      return DEMO_CHAT_MESSAGES;
     }
+    return [];
   },
 
   async sendChatMessage(challengeId: string, content: string, senderName: string): Promise<ChatMessage> {

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
-import { setTokenProvider } from "./services/apiClient";
+import { setTokenProvider, setDemoMode } from "./services/apiClient";
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import BrowseChallengesPage from "./pages/BrowseChallengesPage";
@@ -13,6 +13,13 @@ import ActiveChallengesPage from "./pages/ActiveChallengesPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+
+function DemoRouteHandler() {
+  useEffect(() => {
+    setDemoMode(true);
+  }, []);
+  return <Navigate to="/dashboard?demo=true" replace />;
+}
 
 function PrivyTokenSync() {
   const { ready, authenticated, getAccessToken } = usePrivy();
@@ -39,9 +46,10 @@ export function App() {
     <>
       <PrivyTokenSync />
       <Routes>
-      {/* Public Landing & Login */}
+      {/* Public Landing & Login & Demo Route */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LandingPage />} />
+      <Route path="/demo" element={<DemoRouteHandler />} />
 
       {/* Authenticated Application Routes */}
       <Route

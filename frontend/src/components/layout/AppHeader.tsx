@@ -2,12 +2,21 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import { useCommitmentWallet } from "../../hooks/useCommitmentWallet";
-import { Copy, Check, User as UserIcon, Shield, ExternalLink } from "lucide-react";
+import { isDemoMode, setDemoMode } from "../../services/apiClient";
+import { Copy, Check, User as UserIcon, Shield, ExternalLink, Sparkles } from "lucide-react";
 
 export function AppHeader() {
   const { user } = usePrivy();
   const { address } = useCommitmentWallet();
   const [copied, setCopied] = useState(false);
+  const [demoActive, setDemoActive] = useState(isDemoMode());
+
+  const toggleDemo = () => {
+    const next = !demoActive;
+    setDemoMode(next);
+    setDemoActive(next);
+    window.location.reload();
+  };
 
   const googleAccount = user?.linkedAccounts?.find(
     (acc) => acc.type === "google_oauth"
@@ -64,6 +73,18 @@ export function AppHeader() {
             {copied ? <Check size={13} color="var(--color-success)" /> : <Copy size={13} />}
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={toggleDemo}
+          className={demoActive ? "pactum-btn-primary" : "pactum-btn-secondary"}
+          style={{ padding: "6px 11px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 700 }}
+          title={demoActive ? "Click to switch to Live Mode" : "Click to view Demo Mode (10K Steps Challenge with Ravikant, Rishikesh, Kartikey)"}
+          id="headerDemoToggleBtn"
+        >
+          <Sparkles size={13} />
+          <span>{demoActive ? "Demo: ON" : "Demo Mode"}</span>
+        </button>
 
         <Link
           to="/faucet"

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search, Flame, ArrowRight, Clock } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
-import { pactumApi } from "../services/apiClient";
+import { pactumApi, isDemoMode } from "../services/apiClient";
 import { useCommitmentWallet } from "../hooks/useCommitmentWallet";
 import type { Challenge } from "../types/pactum";
 
@@ -19,6 +19,11 @@ export function ActiveChallengesPage() {
       setError(null);
       const data = await pactumApi.listChallenges({ status: "active" });
       const allActive = data.items || (Array.isArray(data) ? data : []);
+
+      if (isDemoMode()) {
+        setChallenges(allActive);
+        return;
+      }
 
       if (!address) {
         // User has no connected wallet or active enrolled commitments

@@ -13,6 +13,7 @@ export function ChallengeDetailsPage() {
   const { address } = useCommitmentWallet();
 
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
@@ -29,6 +30,7 @@ export function ChallengeDetailsPage() {
           pactumApi.getParticipants(id).catch(() => []),
         ]);
         setChallenge(data);
+        setParticipants(parts);
         if (
           address &&
           parts.some((p: any) => p.walletAddress?.toLowerCase() === address.toLowerCase())
@@ -202,6 +204,61 @@ export function ChallengeDetailsPage() {
             ))}
           </div>
         </div>
+
+        {/* Enrolled Participants */}
+        {participants.length > 0 && (
+          <div className="pactum-card" style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "var(--color-text)" }}>
+                Enrolled Participants ({participants.length})
+              </h2>
+              <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Peer Accountability</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+              {participants.map((p) => (
+                <div
+                  key={p._id || p.displayName}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    background: "#f8fbfe",
+                    border: "1px solid var(--color-border)",
+                  }}
+                  id={`participant-card-${(p.displayName || "peer").toLowerCase()}`}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: "var(--color-primary-soft)",
+                      color: "var(--color-primary-dark)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                      fontSize: 13,
+                    }}
+                  >
+                    {(p.displayName || "P")[0]}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)" }}>
+                      {p.displayName || "Participant"}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "monospace" }}>
+                      {p.walletAddress ? `${p.walletAddress.slice(0, 6)}...${p.walletAddress.slice(-4)}` : "Verified Peer"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Rules & Expectations */}
         <div className="pactum-card" style={{ marginBottom: 20 }}>

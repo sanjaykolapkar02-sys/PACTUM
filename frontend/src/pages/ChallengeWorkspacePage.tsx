@@ -18,10 +18,11 @@ import AppLayout from "../components/layout/AppLayout";
 import SubmissionModal from "../components/challenges/SubmissionModal";
 import VoteControls from "../components/challenges/VoteControls";
 import { pactumApi, pactumRealtime } from "../services/apiClient";
+import { DEMO_LEADERBOARD } from "../data/mockDemoData";
 import type { Challenge, Submission, ChatMessage, Participant } from "../types/pactum";
 
 interface ChallengeWorkspaceProps {
-  initialTab?: "chat" | "submissions" | "overview";
+  initialTab?: "chat" | "submissions" | "overview" | "leaderboard";
 }
 
 export function ChallengeWorkspacePage({ initialTab = "submissions" }: ChallengeWorkspaceProps) {
@@ -29,7 +30,9 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
   const navigate = useNavigate();
   const { user } = usePrivy();
 
-  const [activeTab, setActiveTab] = useState<"chat" | "submissions" | "overview">(initialTab);
+  const [activeTab, setActiveTab] = useState<"chat" | "submissions" | "overview" | "leaderboard">(
+    initialTab
+  );
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -56,30 +59,40 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
       setChallenge(chalData);
       setSubmissions(subsData);
 
-      // Preload friendly participant welcome messages if room chat is empty
+      // Preload participant messages from Ravikant, Rishikesh, Kartikey if room chat is empty
       const initialMsgs =
         msgsData.length > 0
           ? msgsData
           : [
               {
-                id: "msg_alex_01",
+                id: "msg_ravikant_01",
                 challengeId: id,
-                senderId: "alex_chen",
-                senderName: "Alex Chen",
-                senderWallet: "0x1a2b...9a0b",
+                senderId: "user_ravikant",
+                senderName: "Ravikant",
+                senderWallet: "0x71a2...b49c",
                 content:
-                  "Welcome to the 7-day coding consistency challenge! What projects is everyone working on today?",
+                  "Hey everyone! Day 4 of our challenge. Hit 7,500 steps early on my morning jog!",
                 timestamp: "09:15 AM",
               },
               {
-                id: "msg_priya_02",
+                id: "msg_rishikesh_02",
                 challengeId: id,
-                senderId: "priya_sharma",
-                senderName: "Priya Sharma",
-                senderWallet: "0x9f8e...1f0e",
+                senderId: "user_rishikesh",
+                senderName: "Rishikesh",
+                senderWallet: "0x34d8...e81a",
                 content:
-                  "Solving LeetCode tree problems and reviewing smart contract PRs. Remember to submit proof before 10 PM!",
+                  "Great pace Ravikant! Heading out for my evening walk now to cross 10K before the 10 PM window.",
                 timestamp: "10:30 AM",
+              },
+              {
+                id: "msg_kartikey_03",
+                challengeId: id,
+                senderId: "user_kartikey",
+                senderName: "Kartikey",
+                senderWallet: "0x98f1...c20b",
+                content:
+                  "Uploaded my step counter proof — crossed 10,120 steps! Please review when you get a moment.",
+                timestamp: "05:45 PM",
               },
             ];
       setMessages(initialMsgs);
@@ -303,6 +316,18 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
           >
             <BookOpen size={16} />
             <span>Rules & Overview</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "leaderboard"}
+            onClick={() => setActiveTab("leaderboard")}
+            className={`pactum-tab-btn ${activeTab === "leaderboard" ? "active" : ""}`}
+            id="tabLeaderboard"
+          >
+            <Trophy size={16} />
+            <span>Leaderboard</span>
           </button>
         </div>
 
@@ -597,6 +622,141 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
               <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
                 At the conclusion of the 7-day challenge, the smart contract pool verifies participant completion. Successful participants receive their full stake back plus a proportional bonus from any failed participants.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Leaderboard & Verification Standings */}
+        {activeTab === "leaderboard" && (
+          <div>
+            <div className="pactum-card" style={{ marginBottom: 16, background: "var(--gradient-card)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary-dark)", textTransform: "uppercase" }}>
+                    Verified Pool Standings
+                  </div>
+                  <h2 style={{ fontSize: 18, fontWeight: 800, margin: "2px 0 0", color: "var(--color-text)" }}>
+                    Participant Leaderboard
+                  </h2>
+                </div>
+                <span className="pactum-badge pactum-badge-active">● Active Stage</span>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "6px 0 0" }}>
+                Rankings determined by verified daily proofs and submission consistency.
+              </p>
+            </div>
+
+            {/* Standings List */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              {DEMO_LEADERBOARD.map((entry) => {
+                const isFirst = entry.rank === 1;
+                const isSecond = entry.rank === 2;
+                const medalColor = isFirst ? "#f59e0b" : isSecond ? "#94a3b8" : "#d97706";
+                const medalText = isFirst ? "🥇 1st" : isSecond ? "🥈 2nd" : "🥉 3rd";
+
+                return (
+                  <div
+                    key={entry.name}
+                    className="pactum-card"
+                    style={{
+                      padding: "16px 20px",
+                      borderLeft: `4px solid ${medalColor}`,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 16,
+                    }}
+                    id={`leaderboard-row-${entry.name.toLowerCase()}`}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: "50%",
+                          background: isFirst ? "#fef3c7" : "#f1f5f9",
+                          color: medalColor,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 800,
+                          fontSize: 13,
+                        }}
+                      >
+                        {medalText}
+                      </div>
+
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>
+                            {entry.name}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--color-text-muted)", fontFamily: "monospace" }}>
+                            {entry.walletAddress}
+                          </span>
+                          {entry.status === "verified" ? (
+                            <span style={{ fontSize: 11, color: "var(--color-success)", fontWeight: 700 }}>
+                              ✓ Verified
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: "var(--color-warning)", fontWeight: 700 }}>
+                              ⏳ Pending Review
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, fontSize: 12, color: "var(--color-text-muted)" }}>
+                          <span>
+                            <strong>{entry.daysCompleted}</strong> / {entry.totalDays} Days Completed ({entry.percentage}%)
+                          </span>
+                          <span>·</span>
+                          <span>🔥 {entry.streak} Day Streak</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: "right", minWidth: 140 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-muted)", textTransform: "uppercase" }}>
+                        Projected Reward
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--color-success)" }}>
+                        {entry.projectedReward}
+                      </div>
+                      <div style={{ fontSize: 10, color: "var(--color-text-muted)", marginTop: 1 }}>
+                        (Demo Preview)
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Reward Pool Summary Card */}
+            <div className="pactum-card" style={{ background: "#fcfdfe", border: "1px dashed var(--color-border)" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-primary-dark)", textTransform: "uppercase", marginBottom: 4 }}>
+                Reward Settlement Breakdown (Demo Preview)
+              </div>
+              <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 10px", lineHeight: 1.5 }}>
+                Total Pool: <strong>0.30 MON</strong> (3 participants × 0.10 MON entry stake). At settlement, 100% of the escrowed stake pool is distributed to verified completers.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+                <div style={{ background: "#fff", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Ravikant (Rank 1)</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-success)" }}>0.120 MON</div>
+                  <div style={{ fontSize: 10, color: "var(--color-success)" }}>+20% bonus return</div>
+                </div>
+                <div style={{ background: "#fff", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Rishikesh (Rank 2)</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-text)" }}>0.100 MON</div>
+                  <div style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Full stake returned</div>
+                </div>
+                <div style={{ background: "#fff", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>Kartikey (Rank 3)</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-warning)" }}>0.080 MON</div>
+                  <div style={{ fontSize: 10, color: "var(--color-text-muted)" }}>Day 4 proof in review</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
