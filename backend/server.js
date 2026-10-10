@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -49,11 +49,36 @@ async function privyGetUser(userId) {
   return res.json();
 }
 
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:8000")
+  .split(",")
+  .map(o => o.trim())
+  .filter(Boolean);
+
+function isOriginAllowed(origin, list) {
+  if (!origin) return true;
+  const norm = origin.replace(/\/+$/, "").toLowerCase();
+  return list.some(allowed => {
+    const a = allowed.replace(/\/+$/, "").toLowerCase();
+    if (a === norm) return true;
+    if (a.includes("*")) {
+      const reg = "^" + a.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[a-zA-Z0-9_-]+") + "$";
+      return new RegExp(reg).test(norm);
+    }
+    return false;
+  });
+}
+
 // 🚀 Express setup 🚀
 const app = express();
 
 app.use(cors({
-  origin: FRONTEND_ORIGIN,
+  origin(origin, callback) {
+    if (!origin || isOriginAllowed(origin, allowedOrigins)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+  },
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true

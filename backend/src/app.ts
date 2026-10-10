@@ -23,6 +23,33 @@ const allowedOrigins = (env.FRONTEND_ORIGIN || "http://localhost:5174")
   .map((o) => o.trim())
   .filter(Boolean);
 
+/**
+ * Checks whether an incoming request Origin is permitted by FRONTEND_ORIGIN.
+ * Supports exact matches and wildcard subdomain patterns (e.g., https://*.vercel.app).
+ * Never permits '*' wildcard with credentials.
+ */
+function isOriginAllowed(origin: string, allowedList: string[]): boolean {
+  const normalizedOrigin = origin.replace(/\/+$/, "").toLowerCase();
+
+  return allowedList.some((allowed) => {
+    const normalizedAllowed = allowed.replace(/\/+$/, "").toLowerCase();
+    if (normalizedAllowed === normalizedOrigin) {
+      return true;
+    }
+    // Support wildcard subdomain matching (e.g., https://*.vercel.app or *.vercel.app)
+    if (normalizedAllowed.includes("*")) {
+      const regexPattern =
+        "^" +
+        normalizedAllowed
+          .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+          .replace(/\*/g, "[a-zA-Z0-9_-]+") +
+        "$";
+      return new RegExp(regexPattern).test(normalizedOrigin);
+    }
+    return false;
+  });
+}
+
 // Security Headers
 app.use(helmet());
 
@@ -31,7 +58,7 @@ app.use(
   cors({
     origin(origin, callback) {
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
         return;
       }

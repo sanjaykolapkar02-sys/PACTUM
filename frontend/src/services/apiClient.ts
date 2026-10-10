@@ -7,8 +7,67 @@ import type {
   DashboardStats,
 } from "../types/pactum";
 
-// Read backend URL from environment or default to local dev port
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3001").replace(/\/+$/, "");
+/**
+ * Resolves the backend base URL.
+ * - In production: strictly uses import.meta.env.VITE_BACKEND_URL. Never falls back to localhost.
+ * - In development: uses import.meta.env.VITE_BACKEND_URL, or defaults to "http://localhost:3001" for local DX.
+ * - Normalizes the URL by trimming whitespace, stripping trailing slashes, and removing any trailing "/api"
+ *   to prevent duplicate "/api/api" paths when joined with API endpoints.
+ */
+export function getBackendBaseUrl(): string {
+  const rawUrl = import.meta.env.VITE_BACKEND_URL ? String(import.meta.env.VITE_BACKEND_URL).trim() : "";
+
+  if (rawUrl) {
+    let cleaned = rawUrl.replace(/\/+$/, "");
+    if (cleaned.endsWith("/api")) {
+      cleaned = cleaned.slice(0, -4).replace(/\/+$/, "");
+    }
+
+    // Warn if someone accidentally configured localhost in a production build
+    if (import.meta.env.PROD && (cleaned.includes("localhost") || cleaned.includes("127.0.0.1"))) {
+      console.warn(
+        `[PACTUM API] Warning: VITE_BACKEND_URL is configured to localhost (${cleaned}) in a production build. ` +
+        `This will cause ERR_CONNECTION_REFUSED in production. Configure your deployed backend URL in Vercel.`
+      );
+    }
+
+    return cleaned;
+  }
+
+  // Local development fallback
+  if (import.meta.env.DEV) {
+    return "http://localhost:3001";
+  }
+
+  // In production with no VITE_BACKEND_URL configured
+  return "";
+}
+
+/**
+ * Builds the fully qualified request URL for an API endpoint.
+ * Ensures clean joining without duplicate slashes or duplicate /api prefixes.
+ */
+export function buildApiUrl(endpoint: string): string {
+  const baseUrl = getBackendBaseUrl();
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+  if (!baseUrl) {
+    if (import.meta.env.PROD) {
+      throw new ApiError(
+        500,
+        "VITE_BACKEND_URL is not configured in Vercel environment variables. Please set VITE_BACKEND_URL in your Vercel frontend project settings to the deployed backend URL and redeploy.",
+        "backend_url_unconfigured"
+      );
+    }
+  }
+
+  // Prevent duplicate /api/api if baseUrl ends with /api and endpoint starts with /api
+  if (baseUrl.endsWith("/api") && normalizedEndpoint.startsWith("/api/")) {
+    return `${baseUrl.slice(0, -4)}${normalizedEndpoint}`;
+  }
+
+  return `${baseUrl}${normalizedEndpoint}`;
+}
 
 export class ApiError extends Error {
   public status: number;
@@ -46,7 +105,7 @@ interface RequestOptions extends RequestInit {
  */
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { requiresAuth = false, headers = {}, ...rest } = options;
-  const url = `${BACKEND_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  const url = buildApiUrl(endpoint);
 
   const requestHeaders: Record<string, string> = {
     Accept: "application/json",

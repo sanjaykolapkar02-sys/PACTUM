@@ -4,6 +4,8 @@ import {
   setTokenProvider,
   ApiError,
   pactumRealtime,
+  getBackendBaseUrl,
+  buildApiUrl,
 } from "../services/apiClient";
 
 describe("Frontend Centralized API Client & Service Integration Suite", () => {
@@ -365,6 +367,47 @@ describe("Frontend Centralized API Client & Service Integration Suite", () => {
           }),
         })
       );
+    });
+  });
+
+  describe("Backend URL Normalization & Production Safety", () => {
+    it("normalizes endpoints without duplicate /api prefixes when baseUrl has trailing /api", () => {
+      const originalEnv = import.meta.env.VITE_BACKEND_URL;
+      (import.meta.env as any).VITE_BACKEND_URL = "https://pactum-backend.vercel.app/api";
+
+      try {
+        expect(getBackendBaseUrl()).toBe("https://pactum-backend.vercel.app");
+        const url = buildApiUrl("/api/auth/me");
+        expect(url).toBe("https://pactum-backend.vercel.app/api/auth/me");
+        expect(url).not.toContain("/api/api");
+      } finally {
+        (import.meta.env as any).VITE_BACKEND_URL = originalEnv;
+      }
+    });
+
+    it("strips trailing slashes from baseUrl", () => {
+      const originalEnv = import.meta.env.VITE_BACKEND_URL;
+      (import.meta.env as any).VITE_BACKEND_URL = "https://pactum-backend.vercel.app///";
+
+      try {
+        const url = buildApiUrl("/api/challenges");
+        expect(url).toBe("https://pactum-backend.vercel.app/api/challenges");
+        expect(url).not.toContain("///");
+      } finally {
+        (import.meta.env as any).VITE_BACKEND_URL = originalEnv;
+      }
+    });
+
+    it("ensures leading slash on endpoints without one", () => {
+      const originalEnv = import.meta.env.VITE_BACKEND_URL;
+      (import.meta.env as any).VITE_BACKEND_URL = "https://pactum-backend.vercel.app";
+
+      try {
+        const url = buildApiUrl("api/challenges");
+        expect(url).toBe("https://pactum-backend.vercel.app/api/challenges");
+      } finally {
+        (import.meta.env as any).VITE_BACKEND_URL = originalEnv;
+      }
     });
   });
 });
