@@ -78,6 +78,7 @@ export function AppPrivyProvider({ children }: AppPrivyProviderProps) {
         appearance: {
           theme: "light",
           accentColor: "#6b4428",
+          walletList: ["detected_wallets", "metamask", "rainbow", "wallet_connect"],
         },
         loginMethods: ["google"],
         embeddedWallets: {
