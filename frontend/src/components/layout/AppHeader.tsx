@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import { useCommitmentWallet } from "../../hooks/useCommitmentWallet";
-import { Copy, Check, User as UserIcon, Shield } from "lucide-react";
+import { Copy, Check, User as UserIcon, Shield, ExternalLink } from "lucide-react";
 
 export function AppHeader() {
   const { user } = usePrivy();
@@ -64,6 +64,17 @@ export function AppHeader() {
             {copied ? <Check size={13} color="var(--color-success)" /> : <Copy size={13} />}
           </button>
         )}
+
+        <Link
+          to="/faucet"
+          className="pactum-btn-secondary"
+          style={{ padding: "6px 11px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 700 }}
+          title="Get Testnet MON (Official Monad Faucet)"
+          id="headerGetMonBtn"
+        >
+          <ExternalLink size={13} />
+          <span>Get MON</span>
+        </Link>
 
         <Link
           to="/profile"

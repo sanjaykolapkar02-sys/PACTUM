@@ -1,10 +1,15 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ExternalLink } from "lucide-react";
 import { useCommitmentWallet } from "../../hooks/useCommitmentWallet";
 import { useMonadBalance } from "../../hooks/useMonadBalance";
+import { MONAD_TESTNET } from "../../config/monad";
 
 export default function WalletBalance() {
   const { address } = useCommitmentWallet();
   const { balance, isLoading: loading, error, refreshBalance } = useMonadBalance(address);
+
+  const openFaucet = () => {
+    window.open(MONAD_TESTNET.faucetUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <section className="panel">
@@ -26,7 +31,7 @@ export default function WalletBalance() {
               {balance}
             </div>
             <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-              Native gas currency for transaction fees on Chain ID 10143
+              Native gas currency for transaction fees on Chain ID {MONAD_TESTNET.chainId}
             </div>
           </div>
         )}
@@ -38,17 +43,31 @@ export default function WalletBalance() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => void refreshBalance()}
-        disabled={loading || !address}
-        className="btn secondary small"
-        id="refreshBalanceBtn"
-        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-      >
-        {loading ? <span className="spinner" /> : <RefreshCw size={14} />}
-        <span>Refresh Balance</span>
-      </button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={openFaucet}
+          disabled={!address}
+          className="btn small"
+          id="balanceGetMonBtn"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <ExternalLink size={14} />
+          <span>Get Testnet MON</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void refreshBalance()}
+          disabled={loading || !address}
+          className="btn secondary small"
+          id="refreshBalanceBtn"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          {loading ? <span className="spinner" /> : <RefreshCw size={14} />}
+          <span>Refresh Balance</span>
+        </button>
+      </div>
     </section>
   );
 }

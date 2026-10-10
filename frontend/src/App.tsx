@@ -99,6 +99,14 @@ export function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/faucet"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* 404 Fallback */}
       <Route path="*" element={<NotFoundPage />} />

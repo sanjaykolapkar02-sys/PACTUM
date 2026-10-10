@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Compass } from "lucide-react";
+import { Search, Plus, Compass, ExternalLink } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import ChallengeStats from "../components/challenges/ChallengeStats";
 import ChallengeCard from "../components/challenges/ChallengeCard";
@@ -69,7 +69,12 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link to="/faucet" className="pactum-btn-secondary" style={{ padding: "8px 14px", fontSize: 13 }} id="dashboardGetMonCta">
+            <ExternalLink size={15} />
+            <span>Get Testnet MON</span>
+          </Link>
+
           <Link to="/challenges" className="pactum-btn-secondary" style={{ padding: "8px 14px", fontSize: 13 }} id="exploreChallengesCta">
             <Compass size={15} />
             <span>Explore</span>

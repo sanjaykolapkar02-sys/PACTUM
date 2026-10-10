@@ -373,6 +373,31 @@ describe("Manual-Only Monad Testnet Workflow Suite", () => {
       expect(onRefreshMock).toHaveBeenCalledTimes(1);
       await unmountRoot(root);
     });
+
+    it("10. Disables 'Get Testnet MON' and 'Refresh Balance' when wallet is disconnected", async () => {
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(
+          <FaucetCard
+            walletAddress={null}
+            balance={null}
+            isLoading={false}
+            error={null}
+            lastUpdated={null}
+            onRefresh={vi.fn()}
+          />
+        );
+      });
+
+      expect(container.textContent).toContain("Wallet Unavailable:");
+      const getMonBtn = container.querySelector("#getTestnetMonBtn") as HTMLButtonElement;
+      expect(getMonBtn.disabled).toBe(true);
+
+      const refreshBtn = container.querySelector("#refreshBalanceBtn") as HTMLButtonElement;
+      expect(refreshBtn.disabled).toBe(true);
+
+      await unmountRoot(root);
+    });
   });
 
   describe("Manual Transaction Modal", () => {
