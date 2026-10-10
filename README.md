@@ -9,6 +9,8 @@ A creator launches a challenge, sets the rules and stake, and invites others. Pa
 
 - **Repository:** [github.com/sanjaykolapkar02-sys/PACTUM](https://github.com/sanjaykolapkar02-sys/PACTUM)
 - **Network:** Monad Testnet (chain ID `10143`)
+- **Live Link**[pactum-akqs.vercel.app](https://pactum-akqs.vercel.app/)  
+- **contract add** : 0x91902715eE368c3782B0B1ab12d0948FA8aB1345
 - **Token:** Test USD-denominated ERC-20 asset (DemoUSD concept; verify current deployment and token address before using)
 - **Status:** Active development / testnet MVP. Deployment addresses, production URLs and end-to-end evidence should be added after verification.
 
