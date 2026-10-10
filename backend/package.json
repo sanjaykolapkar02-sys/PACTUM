@@ -14,7 +14,8 @@
     "test:legacy": "node test/api.test.js",
     "test:client": "node ../tests/auth-wallet.test.js",
     "test:all": "vitest run && node test/api.test.js",
-    "seed": "tsx src/scripts/seedChallenges.ts"
+    "seed": "tsx src/scripts/seedChallenges.ts",
+    "seed:demo": "tsx src/scripts/seedJudgesDemo.ts"
   },
   "dependencies": {
     "@privy-io/node": "latest",

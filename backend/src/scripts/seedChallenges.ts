@@ -22,6 +22,27 @@ export interface SeedChallengeDefinition {
 }
 
 export const SEED_CHALLENGES: SeedChallengeDefinition[] = [
+  // 0. Primary Judges Demo Challenge (Active / Live Challenge)
+  {
+    seedKey: "demo-judges-coding-consistency",
+    title: "7-Day Coding Consistency Challenge",
+    category: "Learning & Productivity",
+    duration: 7,
+    stakeAmount: "100000000000000000", // 0.10 MON
+    displayFeeMon: "0.10 MON",
+    description:
+      "Build a consistent coding habit by completing a focused coding session every day for seven consecutive days.",
+    status: "active",
+    daysStartedAgo: 3,
+    daysUntilEnd: 4,
+    participantCount: 6,
+    maximumParticipants: 15,
+    dailyDeadline: "10:00 PM",
+    specificRules:
+      "1. Participants must complete the daily coding session (minimum 30 minutes).\n2. Participants submit proof for each challenge day (screenshot or commit/PR link).\n3. Submissions are recorded with ISO timestamps.\n4. Submissions can be reviewed according to the application's existing verification workflow.\n5. Challenge completion depends on the actual configured rules and submission records.",
+    submissionSchedule: "Daily Window: 08:00 AM – 10:00 PM UTC",
+  },
+
   // 1. Daily Fitness (Active / Live Challenge)
   {
     seedKey: "seed-fitness-7day-streak",

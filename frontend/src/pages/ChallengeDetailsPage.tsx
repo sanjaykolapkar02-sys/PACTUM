@@ -24,8 +24,17 @@ export function ChallengeDetailsPage() {
       if (!id) return;
       try {
         setLoading(true);
-        const data = await pactumApi.getChallenge(id);
+        const [data, parts] = await Promise.all([
+          pactumApi.getChallenge(id),
+          pactumApi.getParticipants(id).catch(() => []),
+        ]);
         setChallenge(data);
+        if (
+          address &&
+          parts.some((p: any) => p.walletAddress?.toLowerCase() === address.toLowerCase())
+        ) {
+          setHasJoined(true);
+        }
       } catch (err) {
         console.error("Error loading challenge details:", err);
       } finally {
@@ -33,7 +42,7 @@ export function ChallengeDetailsPage() {
       }
     }
     void load();
-  }, [id]);
+  }, [id, address]);
 
   const handleJoin = async (_verifiedTxHash?: string) => {
     if (!id || !challenge) return;
@@ -172,6 +181,28 @@ export function ChallengeDetailsPage() {
           </div>
         </div>
 
+        {/* How It Works Sequence */}
+        <div className="pactum-card" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 12px", color: "var(--color-text)" }}>
+            How It Works
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+            {[
+              { step: "01", title: "Join Challenge", desc: "Commit entry fee" },
+              { step: "02", title: "Daily Habit", desc: "Complete 30m coding" },
+              { step: "03", title: "Submit Proof", desc: "Upload code / log" },
+              { step: "04", title: "Review Progress", desc: "Peer consensus" },
+              { step: "05", title: "Complete Pool", desc: "Reclaim & reward" },
+            ].map((s) => (
+              <div key={s.step} style={{ background: "#f8fbfe", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border)" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-primary-dark)", letterSpacing: "0.05em" }}>STEP {s.step}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", margin: "3px 0 1px" }}>{s.title}</div>
+                <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Rules & Expectations */}
         <div className="pactum-card" style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 12px", color: "var(--color-text)" }}>
@@ -182,8 +213,17 @@ export function ChallengeDetailsPage() {
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)", marginBottom: 4 }}>
               Specific Rules
             </div>
-            <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)" }}>
+            <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)", whiteSpace: "pre-line" }}>
               {challenge.specificRules || "Complete daily tasks independently. Peer reviews are enforced."}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)", marginBottom: 4 }}>
+              Proof Requirements
+            </div>
+            <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)" }}>
+              {challenge.submissionRules || "Screenshot of coding progress, or a short text explanation with a link to the work completed."}
             </div>
           </div>
 
@@ -192,9 +232,19 @@ export function ChallengeDetailsPage() {
               Submission Windows
             </div>
             <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)" }}>
-              {challenge.submissionSchedule || "Daily Windows: 08:00 AM – 10:00 AM and 09:00 PM – 10:00 PM"}
+              {challenge.submissionSchedule || "Daily Windows: 08:00 AM – 10:00 PM UTC"}
             </div>
           </div>
+        </div>
+
+        {/* Completion & Settlement Information */}
+        <div className="pactum-card" style={{ marginBottom: 20, background: "#fcfdfe" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 8px", color: "var(--color-text)" }}>
+            Challenge Completion & Settlement
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
+            After the 7-day challenge concludes, participants who successfully achieved verified completion of all scheduled days reclaim 100% of their deposited stake. If any participants miss requirements, their forfeited stakes are distributed proportionally among successful peers.
+          </p>
         </div>
 
         {error && (
@@ -206,9 +256,11 @@ export function ChallengeDetailsPage() {
         {/* Join CTA */}
         <div className="pactum-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>Ready to commit?</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 600 }}>
+              {hasJoined ? "You are enrolled" : "Ready to commit?"}
+            </div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)" }}>
-              {isFull ? "Pool Capacity Reached (15/15)" : "Join before the start window closes"}
+              {hasJoined ? "Active pool participant" : isFull ? "Pool Capacity Reached (15/15)" : `Entry stake: ${formattedStake} MON`}
             </div>
           </div>
 

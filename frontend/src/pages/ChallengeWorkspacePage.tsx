@@ -12,6 +12,7 @@ import {
   Trophy,
   AlertCircle,
   Wifi,
+  BookOpen,
 } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import SubmissionModal from "../components/challenges/SubmissionModal";
@@ -20,7 +21,7 @@ import { pactumApi, pactumRealtime } from "../services/apiClient";
 import type { Challenge, Submission, ChatMessage, Participant } from "../types/pactum";
 
 interface ChallengeWorkspaceProps {
-  initialTab?: "chat" | "submissions";
+  initialTab?: "chat" | "submissions" | "overview";
 }
 
 export function ChallengeWorkspacePage({ initialTab = "submissions" }: ChallengeWorkspaceProps) {
@@ -28,7 +29,7 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
   const navigate = useNavigate();
   const { user } = usePrivy();
 
-  const [activeTab, setActiveTab] = useState<"chat" | "submissions">(initialTab);
+  const [activeTab, setActiveTab] = useState<"chat" | "submissions" | "overview">(initialTab);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -54,7 +55,34 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
       ]);
       setChallenge(chalData);
       setSubmissions(subsData);
-      setMessages(msgsData);
+
+      // Preload friendly participant welcome messages if room chat is empty
+      const initialMsgs =
+        msgsData.length > 0
+          ? msgsData
+          : [
+              {
+                id: "msg_alex_01",
+                challengeId: id,
+                senderId: "alex_chen",
+                senderName: "Alex Chen",
+                senderWallet: "0x1a2b...9a0b",
+                content:
+                  "Welcome to the 7-day coding consistency challenge! What projects is everyone working on today?",
+                timestamp: "09:15 AM",
+              },
+              {
+                id: "msg_priya_02",
+                challengeId: id,
+                senderId: "priya_sharma",
+                senderName: "Priya Sharma",
+                senderWallet: "0x9f8e...1f0e",
+                content:
+                  "Solving LeetCode tree problems and reviewing smart contract PRs. Remember to submit proof before 10 PM!",
+                timestamp: "10:30 AM",
+              },
+            ];
+      setMessages(initialMsgs);
       setParticipants(partsData);
     } catch (err) {
       console.error("Error loading workspace data:", err);
@@ -193,6 +221,52 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
           </div>
         </div>
 
+        {/* Challenge Progress Card */}
+        {(() => {
+          const currentDay = challenge.startAt
+            ? Math.max(1, Math.min(challenge.duration, Math.ceil((Date.now() - new Date(challenge.startAt).getTime()) / (1000 * 60 * 60 * 24))))
+            : 4;
+          const approvedCount = submissions.filter((s) => s.status === "approved").length;
+          const progressPct = Math.round(Math.min(100, (currentDay / challenge.duration) * 100));
+
+          return (
+            <div
+              className="pactum-card"
+              style={{
+                padding: "14px 18px",
+                marginBottom: 16,
+                background: "var(--color-primary-soft)",
+                border: "1px solid var(--color-border)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-primary-dark)" }}>
+                    Day {currentDay} of {challenge.duration}
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>·</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-success)" }}>
+                    {approvedCount} Verified Submission{approvedCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-text-muted)" }}>
+                  {progressPct}% Completed
+                </span>
+              </div>
+              <div style={{ width: "100%", height: 6, background: "#fff", borderRadius: 999, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${progressPct}%`,
+                    height: "100%",
+                    background: "var(--gradient-primary)",
+                    borderRadius: 999,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Workspace Mobile-first Tabs */}
         <div className="pactum-tabs" role="tablist">
           <button
@@ -217,6 +291,18 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
           >
             <MessageSquare size={16} />
             <span>Chat ({messages.length})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "overview"}
+            onClick={() => setActiveTab("overview")}
+            className={`pactum-tab-btn ${activeTab === "overview" ? "active" : ""}`}
+            id="tabOverview"
+          >
+            <BookOpen size={16} />
+            <span>Rules & Overview</span>
           </button>
         </div>
 
@@ -447,6 +533,71 @@ export function ChallengeWorkspacePage({ initialTab = "submissions" }: Challenge
                 <span>Send</span>
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Tab 3: Rules & Overview */}
+        {activeTab === "overview" && (
+          <div>
+            <div className="pactum-card" style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 12px", color: "var(--color-text)" }}>
+                Challenge Rules & Expectations
+              </h2>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)", marginBottom: 4 }}>
+                  Specific Rules
+                </div>
+                <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)", whiteSpace: "pre-line" }}>
+                  {challenge.specificRules || "Complete daily tasks independently. Peer reviews are enforced."}
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)", marginBottom: 4 }}>
+                  Proof Requirements
+                </div>
+                <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)" }}>
+                  {challenge.submissionRules || "Screenshot of coding progress in IDE/terminal, or a short text explanation with a link to the work completed."}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary-dark)", marginBottom: 4 }}>
+                  Submission Schedule
+                </div>
+                <div style={{ fontSize: 13, color: "var(--color-text)", background: "#f8fbfe", padding: 12, borderRadius: 10, border: "1px solid var(--color-border)" }}>
+                  {challenge.submissionSchedule || "Daily Windows: 08:00 AM – 10:00 PM UTC"}
+                </div>
+              </div>
+            </div>
+
+            <div className="pactum-card" style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 12px", color: "var(--color-text)" }}>
+                How Verification Works
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
+                {[
+                  { step: "01", title: "Join Challenge", desc: "Commit entry fee" },
+                  { step: "02", title: "Daily Habit", desc: "Complete 30m coding" },
+                  { step: "03", title: "Submit Proof", desc: "Upload code / log" },
+                  { step: "04", title: "Review Progress", desc: "Peer consensus" },
+                  { step: "05", title: "Complete Pool", desc: "Reclaim & reward" },
+                ].map((s) => (
+                  <div key={s.step} style={{ background: "#f8fbfe", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-primary-dark)", letterSpacing: "0.05em" }}>STEP {s.step}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", margin: "2px 0" }}>{s.title}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-text-muted)" }}>{s.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pactum-card" style={{ background: "#fcfdfe" }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 8px", color: "var(--color-text)" }}>
+                Settlement & Payout Policy
+              </h2>
+              <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.5 }}>
+                At the conclusion of the 7-day challenge, the smart contract pool verifies participant completion. Successful participants receive their full stake back plus a proportional bonus from any failed participants.
+              </p>
+            </div>
           </div>
         )}
 
