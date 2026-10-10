@@ -1,0 +1,368 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3ed">
+<title>Get Testnet MON | CommitmentPool</title>
+<meta name="description" content="Get testnet MON tokens from the official Monad Testnet Faucet for your CommitmentPool embedded wallet.">
+<script src="https://cdn.jsdelivr.net/npm/@privy-io/js-sdk-core@latest/dist/index.umd.min.js"></script>
+<script>window.CP_CONFIG = { privyAppId: 'YOUR_PRIVY_APP_ID', backendUrl: 'http://localhost:3001' };</script>
+<script src="config.js"></script>
+<script src="privy-auth.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f3ed;--surface:#fffdf9;--brown:#6b4428;--dark:#3b2618;--mid:#8b6345;--line:#e5d9cc;--text:#2a211b;--muted:#786b61;--green:#4f6f52;--red:#9a4f45;--amber:#9a6a32;--shadow:0 12px 28px rgba(59,38,24,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,-apple-system,sans-serif}
+.app{min-height:100vh;display:grid;grid-template-columns:244px 1fr}
+/* sidebar */
+.sidebar{position:fixed;inset:0 auto 0 0;width:244px;padding:22px 16px;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:5;overflow:auto}
+.brand{display:flex;gap:12px;align-items:center;padding:4px 9px 22px;border-bottom:1px solid var(--line);margin-bottom:13px}
+.brand-mark{display:grid;place-items:center;background:var(--brown);color:white;font-weight:900;width:40px;height:40px;border-radius:12px;box-shadow:4px 4px 0 #d8c5b4}
+.brand b{display:block;font-size:15px;letter-spacing:-.03em}.brand small{color:var(--muted);font-size:11px}
+.nav-label{margin:14px 10px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:#a39284;font-weight:800}
+.nav{display:grid;gap:3px}.nav a,.nav button{display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:10px;color:var(--muted);font-size:13px}
+.nav a:hover,.nav button:hover,.nav a.active{background:#f0e7dc;color:var(--brown);font-weight:750}
+.nav .ico{width:18px;text-align:center;font-size:16px}
+.sidebar-bottom{margin-top:auto}
+.network-card{background:#f7f0e8;border:1px solid var(--line);padding:12px;border-radius:13px;margin:16px 0 10px}
+.network-card small{display:block;color:var(--muted);font-size:11px}.network-card b{font-size:12px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px}
+/* main */
+.main{margin-left:244px;padding:26px clamp(18px,3vw,42px) 40px;max-width:860px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:26px}
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--mid);font-weight:800}
+.topbar h1{margin:3px 0 0;font-size:28px;letter-spacing:-.05em;line-height:1.2}
+.top-actions{display:flex;align-items:center;gap:9px}
+.btn{border:0;background:var(--brown);color:white;border-radius:10px;padding:11px 15px;font-weight:750;font-size:12px;cursor:pointer;box-shadow:3px 3px 0 #d8c5b4;transition:transform .18s,box-shadow .18s}
+.btn:hover{transform:translateY(-2px);box-shadow:5px 5px 0 #d8c5b4}
+.btn.secondary{background:#f0e7dc;color:var(--dark);box-shadow:none;border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* faucet card */
+.faucet-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:var(--shadow);margin-bottom:16px}
+.faucet-card h2{font-size:20px;letter-spacing:-.04em;margin:0 0 6px}
+.faucet-card .desc{color:var(--muted);font-size:13px;margin:0 0 22px;line-height:1.65}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.metric-box{background:#f7f0e8;border:1px solid var(--line);border-radius:13px;padding:14px 16px}
+.metric-box small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;font-weight:700}
+.metric-box b{font-size:18px;letter-spacing:-.03em;word-break:break-all}
+.metric-box.balance-ok b{color:var(--green)}
+.metric-box.balance-low b{color:var(--amber)}
+.metric-box.balance-empty b{color:var(--red)}
+.addr-row{display:flex;align-items:center;gap:8px;background:#f7f0e8;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+.addr-row .addr{font-family:monospace;font-size:12.5px;flex:1;word-break:break-all;line-height:1.5}
+.copy-btn{background:var(--brown);color:white;border:0;border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.copy-btn:hover{opacity:.85}.copy-btn.copied{background:var(--green)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.faucet-btn{background:var(--brown);color:white;border:0;border-radius:12px;padding:13px 22px;font-size:13px;font-weight:750;cursor:pointer;box-shadow:3px 3px 0 #d8c5b4;transition:all .18s;display:flex;align-items:center;gap:9px}
+.faucet-btn:hover{transform:translateY(-2px);box-shadow:5px 5px 0 #d8c5b4}
+.refresh-btn{background:#f0e7dc;color:var(--dark);border:1px solid var(--line);border-radius:12px;padding:13px 18px;font-size:13px;font-weight:750;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:8px}
+.refresh-btn:hover{border-color:#c5a88f}.refresh-btn:disabled{opacity:.5;cursor:not-allowed}
+.notice{border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.65;margin-bottom:16px}
+.notice.info{background:#f0e7dc;color:var(--dark)}
+.notice.warning{background:#fef3e2;color:var(--amber);border:1px solid #f0d9a8}
+.notice.error{background:#f7e8e4;color:var(--red)}
+.notice.success{background:#e8f0e9;color:var(--green)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #d8c5b4;border-top-color:var(--brown);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:flex;gap:12px;align-items:flex-start}
+.step-num{background:var(--brown);color:white;font-weight:900;font-size:11px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+.steps .step-txt{font-size:13px;color:var(--dark);line-height:1.6}
+.steps .step-txt small{color:var(--muted)}
+.auth-gate{display:none;text-align:center;padding:48px 24px}
+.auth-gate p{color:var(--muted);margin:8px 0 18px}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">CP</div>
+      <div><b>CommitmentPool</b><small>Monad Testnet</small></div>
+    </div>
+    <div class="nav-label">Main</div>
+    <div class="nav">
+      <a href="dashboard.html" id="navDashboard"><span class="ico">⬡</span> Dashboard</a>
+      <a href="challenges.html"><span class="ico">🏆</span> Challenges</a>
+      <a href="my-challenges.html"><span class="ico">✦</span> My Challenges</a>
+      <a href="create-challenge.html"><span class="ico">＋</span> Create</a>
+    </div>
+    <div class="nav-label">Account</div>
+    <div class="nav">
+      <a href="faucet.html" class="active"><span class="ico">💧</span> Get MON</a>
+      <a href="stakes.html"><span class="ico">🔒</span> My Stakes</a>
+      <a href="rewards.html"><span class="ico">💰</span> Rewards</a>
+      <a href="activity.html"><span class="ico">📋</span> Activity</a>
+      <a href="profile.html"><span class="ico">👤</span> Profile</a>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="network-card">
+        <small>Network</small>
+        <b><span class="dot"></span>Monad Testnet</b>
+        <small style="margin-top:4px">Chain ID: 10143</small>
+      </div>
+      <div class="nav">
+        <button id="sidebarLogout"><span class="ico">⏻</span> Log Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main" id="mainContent">
+    <!-- Auth gate (shown if not logged in) -->
+    <div class="auth-gate" id="authGate">
+      <div style="font-size:32px;margin-bottom:12px">🔒</div>
+      <h2>Sign in required</h2>
+      <p>Please sign in to view your wallet and get testnet MON.</p>
+      <a href="login.html" class="btn">Sign In with Google</a>
+    </div>
+
+    <!-- Faucet content (shown when authenticated) -->
+    <div id="faucetContent" style="display:none">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Wallet Funding</div>
+          <h1>Get Testnet MON</h1>
+        </div>
+        <div class="top-actions">
+          <span id="userBadge" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="loadingState" class="faucet-card">
+        <div style="display:flex;align-items:center;gap:12px;color:var(--muted)">
+          <div class="spinner"></div> Loading wallet information…
+        </div>
+      </div>
+
+      <!-- Wallet error -->
+      <div class="notice error" id="walletError" style="display:none">
+        <strong>Wallet unavailable:</strong> <span id="walletErrorMsg"></span>
+        <br><a href="dashboard.html" style="color:inherit;text-decoration:underline">Return to Dashboard</a>
+      </div>
+
+      <!-- Main faucet panel -->
+      <div id="faucetPanel" style="display:none">
+        <!-- Balance -->
+        <div class="faucet-card">
+          <h2>💧 Testnet MON Faucet</h2>
+          <p class="desc">Use the official Monad Testnet Faucet to fund your embedded wallet. Copy your address below, paste it into the faucet, and claim your testnet MON. Faucet availability, limits, and delivery times are controlled by the faucet service.</p>
+
+          <div class="metric-grid">
+            <div class="metric-box" id="balanceBox">
+              <small>MON Balance</small>
+              <b id="balanceValue">Loading…</b>
+            </div>
+            <div class="metric-box">
+              <small>Network</small>
+              <b><span class="dot" style="background:var(--green)"></span>Monad Testnet</b>
+            </div>
+          </div>
+
+          <!-- Balance error -->
+          <div class="notice error" id="balanceError" style="display:none">
+            <strong>Balance check failed:</strong> <span id="balanceErrorMsg"></span>
+            <button onclick="refreshBalance()" style="margin-top:6px;background:none;border:1px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px">Retry</button>
+          </div>
+
+          <!-- Funding notice -->
+          <div class="notice warning" id="fundingNotice" style="display:none">
+            ⚠️ Your balance is low. Claim testnet MON from the faucet to use CommitmentPool on Monad Testnet.
+          </div>
+          <div class="notice success" id="fundedNotice" style="display:none">
+            ✓ Your wallet has MON. You're ready to join challenges!
+          </div>
+
+          <!-- Wallet address -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;margin-bottom:8px">Your Embedded Wallet Address</div>
+            <div class="addr-row">
+              <div class="addr" id="walletAddressDisplay">Loading…</div>
+              <button class="copy-btn" id="copyAddrBtn" onclick="copyAddress()">Copy</button>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="btn-row">
+            <button class="faucet-btn" id="faucetBtn" onclick="openFaucet()">
+              💧 Get Testnet MON
+            </button>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshBalance()">
+              🔄 Refresh Balance
+            </button>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="faucet-card">
+          <h2>How to Claim Testnet MON</h2>
+          <p class="desc">Follow these steps to fund your embedded wallet:</p>
+          <ul class="steps">
+            <li>
+              <span class="step-num">1</span>
+              <div class="step-txt">Click <strong>Copy</strong> above to copy your wallet address to the clipboard.</div>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <div class="step-txt">Click <strong>Get Testnet MON</strong> to open <a href="https://faucet.monad.xyz" target="_blank" style="color:var(--brown)">faucet.monad.xyz</a> in a new tab.</div>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <div class="step-txt">Paste your address into the faucet and complete any CAPTCHA or eligibility check. <small>The faucet may have rate limits, daily caps, or Twitter/X verification requirements.</small></div>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <div class="step-txt">Return to this page and click <strong>Refresh Balance</strong> to confirm your MON has arrived. <small>Delivery may take a few seconds to a few minutes.</small></div>
+            </li>
+            <li>
+              <span class="step-num">5</span>
+              <div class="step-txt">Once funded, <a href="challenges.html" style="color:var(--brown)">browse challenges</a> and stake your MON.</div>
+            </li>
+          </ul>
+
+          <div class="notice info" style="margin-top:20px">
+            <strong>Important:</strong> This page shows your Privy embedded wallet address — the wallet automatically created for you when you signed in with Google. Do not send real MON or mainnet funds to this address. Testnet only.
+          </div>
+        </div>
+      </div><!-- /faucetPanel -->
+    </div><!-- /faucetContent -->
+  </main>
+</div>
+
+<script>
+let _walletAddress = '';
+
+async function waitForPrivyAuth() {
+  let attempts = 0;
+  while (!window.PrivyAuth && attempts < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+  if (!window.PrivyAuth) throw new Error('Auth module failed to load.');
+  await PrivyAuth.initPrivy();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await waitForPrivyAuth();
+    const state = await PrivyAuth.getAuthState();
+
+    if (!state.authenticated) {
+      document.getElementById('authGate').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('faucetContent').style.display = 'block';
+
+    // Show user badge
+    const googleAcc = (state.user.linkedAccounts || []).find(a => a.type === 'google_oauth');
+    if (googleAcc?.email) {
+      document.getElementById('userBadge').textContent = googleAcc.email;
+    }
+
+    // Get embedded wallet
+    const wallet = PrivyAuth.findEmbeddedWallet(state.user);
+    if (!wallet) {
+      // Try to create it
+      try {
+        const newWallet = await PrivyAuth.ensureEmbeddedWallet();
+        if (newWallet) {
+          _walletAddress = newWallet.address;
+        } else {
+          showWalletError('Could not retrieve or create your embedded wallet. Please return to the Dashboard and try again.');
+          return;
+        }
+      } catch (e) {
+        showWalletError('Wallet not ready: ' + e.message);
+        return;
+      }
+    } else {
+      _walletAddress = wallet.address;
+    }
+
+    // Hide loading, show panel
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('faucetPanel').style.display = 'block';
+
+    // Display address
+    document.getElementById('walletAddressDisplay').textContent = _walletAddress;
+
+    // Load balance
+    await refreshBalance();
+
+  } catch (e) {
+    console.error('Faucet init error:', e);
+    showWalletError('Initialisation error: ' + e.message);
+  }
+});
+
+async function refreshBalance() {
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = '🔄 Checking…';
+  document.getElementById('balanceError').style.display = 'none';
+  document.getElementById('balanceValue').textContent = 'Loading…';
+  document.getElementById('balanceBox').className = 'metric-box';
+  document.getElementById('fundingNotice').style.display = 'none';
+  document.getElementById('fundedNotice').style.display = 'none';
+
+  try {
+    const { balanceWei, balanceFormatted } = await PrivyAuth.getMonadBalance(_walletAddress);
+    document.getElementById('balanceValue').textContent = balanceFormatted;
+
+    // Style based on balance
+    const oneEther = BigInt('1000000000000000000');
+    if (balanceWei === BigInt(0)) {
+      document.getElementById('balanceBox').className = 'metric-box balance-empty';
+      document.getElementById('fundingNotice').style.display = 'block';
+    } else if (balanceWei < oneEther / BigInt(10)) {
+      document.getElementById('balanceBox').className = 'metric-box balance-low';
+      document.getElementById('fundingNotice').style.display = 'block';
+    } else {
+      document.getElementById('balanceBox').className = 'metric-box balance-ok';
+      document.getElementById('fundedNotice').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('balanceError').style.display = 'block';
+    document.getElementById('balanceErrorMsg').textContent = e.message;
+    document.getElementById('balanceValue').textContent = 'Error';
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = '🔄 Refresh Balance';
+  }
+}
+
+async function copyAddress() {
+  if (!_walletAddress) return;
+  try {
+    await PrivyAuth.copyToClipboard(_walletAddress);
+    const btn = document.getElementById('copyAddrBtn');
+    btn.textContent = 'Copied!';
+    btn.className = 'copy-btn copied';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.className = 'copy-btn'; }, 2000);
+  } catch (e) {
+    alert('Copy failed: ' + e.message);
+  }
+}
+
+function openFaucet() {
+  PrivyAuth.openFaucet();
+}
+
+function showWalletError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('walletError').style.display = 'block';
+  document.getElementById('walletErrorMsg').textContent = msg;
+}
+
+document.getElementById('sidebarLogout').addEventListener('click', async () => {
+  if (!confirm('Log out of CommitmentPool?')) return;
+  try {
+    await PrivyAuth.logout();
+  } catch (e) { console.warn('Logout error:', e); }
+  location.href = 'login.html';
+});
+</script>
+</body>
+</html>

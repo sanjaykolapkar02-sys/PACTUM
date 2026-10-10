@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f3ed">
+<title>Log In | CommitmentPool</title>
+<meta name="description" content="Sign in to CommitmentPool with Google. Your embedded wallet is created automatically on Monad Testnet.">
+<!-- Privy JS SDK Core (headless, framework-agnostic) -->
+<script src="https://cdn.jsdelivr.net/npm/@privy-io/js-sdk-core@latest/dist/index.umd.min.js"></script>
+<!-- Shared auth module -->
+<script>
+// Set your Privy App ID and backend URL here.
+// Replace YOUR_PRIVY_APP_ID with your actual App ID from https://dashboard.privy.io
+window.CP_CONFIG = {
+  privyAppId: 'YOUR_PRIVY_APP_ID',
+  backendUrl: 'http://localhost:3001'
+};
+</script>
+<script src="config.js"></script>
+<script src="privy-auth.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f3ed;--surface:#fffdf9;--brown:#6b4428;--dark:#3b2618;--mid:#8b6345;--line:#e5d9cc;--text:#2a211b;--muted:#786b61;--green:#4f6f52;--red:#9a4f45;--amber:#9a6a32;--shadow:0 12px 28px rgba(59,38,24,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:44px 40px;max-width:420px;width:100%;margin:20px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.brand-mark{display:grid;place-items:center;background:var(--brown);color:white;font-weight:900;font-size:18px;width:44px;height:44px;border-radius:12px;box-shadow:4px 4px 0 #d8c5b4}
+.brand b{font-size:17px;letter-spacing:-.03em}.brand small{color:var(--muted);font-size:11px;display:block}
+h1{font-size:26px;letter-spacing:-.06em;margin:0 0 8px;line-height:1.15}
+.sub{color:var(--muted);font-size:13px;margin:0 0 28px;line-height:1.6}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;border:1.5px solid var(--line);background:var(--surface);color:var(--dark);border-radius:12px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 2px 6px rgba(59,38,24,.06)}
+.google-btn:hover{border-color:#c5a88f;box-shadow:0 4px 12px rgba(59,38,24,.12);transform:translateY(-1px)}
+.google-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.google-btn svg{flex-shrink:0}
+.divider{display:flex;align-items:center;gap:14px;margin:20px 0;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.notice{border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.6;margin-top:20px}
+.notice.info{background:#f0e7dc;color:var(--dark)}
+.notice.error{background:#f7e8e4;color:var(--red);border:1px solid #f0cdc7}
+.notice.success{background:#e8f0e9;color:var(--green);border:1px solid #c6d9c7}
+.notice.warning{background:#fef3e2;color:var(--amber);border:1px solid #f0d9a8}
+.spinner{display:inline-block;width:16px;height:16px;border:2.5px solid var(--line);border-top-color:var(--brown);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);margin-top:16px}
+.wallet-pill{background:#f0e7dc;color:var(--brown);border-radius:8px;padding:4px 10px;font-size:11px;font-family:monospace;font-weight:700}
+.learn-more{font-size:11px;color:var(--muted);text-align:center;margin-top:20px}
+.learn-more a{color:var(--brown);text-decoration:underline}
+.config-error{background:#f7e8e4;border:1px solid #f0cdc7;color:var(--red);border-radius:10px;padding:14px;font-size:12.5px;margin-bottom:18px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="card" id="loginCard">
+  <!-- Config error (shown if App ID is placeholder) -->
+  <div class="config-error" id="configError" style="display:none">
+    ⚠️ <strong>Setup required:</strong> Replace <code>YOUR_PRIVY_APP_ID</code> in <code>login.html</code> and <code>dashboard.html</code> with your actual Privy App ID from
+    <a href="https://dashboard.privy.io" target="_blank">dashboard.privy.io</a>.
+  </div>
+
+  <div class="brand">
+    <div class="brand-mark">CP</div>
+    <div><b>CommitmentPool</b><small>Monad Testnet</small></div>
+  </div>
+
+  <h1>Welcome back</h1>
+  <p class="sub">Sign in with Google to access your commitment dashboard and embedded Monad wallet.</p>
+
+  <!-- Google sign-in button -->
+  <button class="google-btn" id="googleBtn" onclick="handleGoogleLogin()">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+      <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+    <span id="googleBtnText">Continue with Google</span>
+  </button>
+
+  <!-- Auth status/loading -->
+  <div class="status-row" id="statusRow" style="display:none">
+    <div class="spinner"></div>
+    <span id="statusMsg">Authenticating…</span>
+  </div>
+
+  <!-- Error notice -->
+  <div class="notice error" id="errorNotice" style="display:none">
+    <strong>Sign-in error:</strong> <span id="errorMsg"></span>
+    <br><small>Please try again or refresh the page.</small>
+  </div>
+
+  <!-- Success notice (briefly shown before redirect) -->
+  <div class="notice success" id="successNotice" style="display:none">
+    ✓ Signed in. Setting up your wallet…
+  </div>
+
+  <div class="divider">Privy-powered authentication</div>
+
+  <div class="notice info">
+    <strong>No seed phrase needed.</strong> Privy creates a non-custodial embedded wallet for you automatically when you sign in. Your wallet is tied to your Google account.
+  </div>
+
+  <p class="learn-more">
+    By continuing you agree to the <a href="https://privy.io/privacy-policy" target="_blank">Privy Privacy Policy</a>.
+    For testnet use only.
+  </p>
+</div>
+
+<script>
+// ── On load: check if already authenticated or if returning from OAuth ───────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check for placeholder App ID
+  if (!window.CP_CONFIG || window.CP_CONFIG.privyAppId === 'YOUR_PRIVY_APP_ID') {
+    document.getElementById('configError').style.display = 'block';
+    document.getElementById('googleBtn').disabled = true;
+    return;
+  }
+
+  // Check if returning from Google OAuth redirect
+  if (location.search.includes('privy_oauth_state') || location.hash.includes('access_token')) {
+    showStatus('Completing sign-in…');
+    try {
+      await waitForPrivyAuth();
+      const result = await PrivyAuth.completeOAuthCallback();
+      if (result && result.user) {
+        await onAuthSuccess(result);
+        return;
+      }
+    } catch (e) {
+      showError('OAuth callback failed: ' + e.message);
+      return;
+    }
+  }
+
+  // Try restoring an existing session
+  showStatus('Checking session…');
+  try {
+    await waitForPrivyAuth();
+    const session = await PrivyAuth.restoreSession();
+    if (session && session.user) {
+      await onAuthSuccess(session);
+      return;
+    }
+  } catch (e) {
+    // Ignore — no existing session
+  }
+  hideStatus();
+});
+
+async function waitForPrivyAuth() {
+  // PrivyAuth is loaded defer — wait for it
+  let attempts = 0;
+  while (!window.PrivyAuth && attempts < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+  if (!window.PrivyAuth) throw new Error('Auth module failed to load.');
+  await PrivyAuth.initPrivy();
+}
+
+async function handleGoogleLogin() {
+  const btn = document.getElementById('googleBtn');
+  btn.disabled = true;
+  hideError();
+  showStatus('Opening Google sign-in…');
+  try {
+    await waitForPrivyAuth();
+    await PrivyAuth.loginWithGoogle();
+    // After initOAuth, the page redirects — nothing more needed here
+  } catch (e) {
+    btn.disabled = false;
+    hideStatus();
+    // User cancelled OAuth
+    if (e.message && (e.message.includes('cancel') || e.message.includes('closed') || e.message.includes('dismiss'))) {
+      showError('Sign-in was cancelled. Click the button to try again.');
+    } else {
+      showError(e.message || 'An unexpected error occurred. Please try again.');
+    }
+  }
+}
+
+async function onAuthSuccess({ user, accessToken, embeddedWallet }) {
+  hideStatus();
+  document.getElementById('successNotice').style.display = 'block';
+  document.getElementById('googleBtn').disabled = true;
+
+  // Ensure embedded wallet exists (fallback — Privy usually auto-creates it)
+  if (!embeddedWallet) {
+    showStatus('Creating your wallet…');
+    try {
+      const w = await PrivyAuth.ensureEmbeddedWallet();
+      embeddedWallet = w;
+      hideStatus();
+    } catch (e) {
+      console.warn('Wallet creation deferred:', e.message);
+      hideStatus();
+    }
+  }
+
+  // Redirect to dashboard
+  setTimeout(() => { location.href = 'dashboard.html'; }, 800);
+}
+
+function showStatus(msg) {
+  document.getElementById('statusRow').style.display = 'flex';
+  document.getElementById('statusMsg').textContent = msg;
+}
+function hideStatus() {
+  document.getElementById('statusRow').style.display = 'none';
+}
+function showError(msg) {
+  document.getElementById('errorNotice').style.display = 'block';
+  document.getElementById('errorMsg').textContent = msg;
+}
+function hideError() {
+  document.getElementById('errorNotice').style.display = 'none';
+}
+</script>
+</body>
+</html>

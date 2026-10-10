@@ -1,0 +1,41 @@
+{
+  "name": "commitmentpool-backend",
+  "version": "1.0.0",
+  "description": "CommitmentPool backend API - Privy token verification and user profile",
+  "main": "server.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node server.js",
+    "start:ts": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "dev:legacy": "node --watch server.js",
+    "test": "vitest run",
+    "test:legacy": "node test/api.test.js",
+    "test:client": "node ../tests/auth-wallet.test.js",
+    "test:all": "vitest run && node test/api.test.js"
+  },
+  "dependencies": {
+    "@privy-io/node": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.11.1",
+    "viem": "^2.57.4",
+    "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
